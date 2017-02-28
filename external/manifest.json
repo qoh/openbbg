@@ -1,0 +1,19 @@
+[{
+ "name": "luajit",
+ "container": "https://github.com/openbbg/deptools/raw/master/packages",
+ "platform": {
+  "gnu64": {
+   "version": "2.0.4",
+   "toolchain": "0.1.0"
+  }
+ }
+},{
+ "name": "glfw",
+ "container": "https://github.com/openbbg/deptools/raw/master/packages",
+ "platform": {
+  "gnu64": {
+   "version": "3.2.1",
+   "toolchain": "0.1.0"
+  }
+ }
+}]

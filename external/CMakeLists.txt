@@ -138,6 +138,9 @@ foreach(pkg ${packages})
 endforeach(p)
 
 
+# Dependency Solver
+
+
 # Export vars for parent list to execute
 file(WRITE ${EXTERNAL_DIR}/vars.cmake "\
 set(INCLUDE \"${INCLUDE}\")\n\
@@ -176,53 +179,10 @@ set(LIB \"${LIB}\")\n\
 # Accumulate includes
 
 
-# If the state of th packages has changed, output parsable information for CI to conduct a test
+# If the state of the packages has changed, output parsable information for CI to conduct a test
 
 
 # Testing:
 # Try latest release, if fails, attempt to set up from last stable release until a build fails, then use the last stable
 # Only do this for one package at a time
 # Try to prioritize packages that are depended on by others
-
-
-return()
-
-
-
-
-
-
-set(EEE ${EXTERNAL_DIR})
-
-message("TARGET DIR: ${EXTERNAL_DIR}")
-message("TARGET DIR: ${EEE}")
-
-set(EXT_MANIFEST "${CMAKE_CURRENT_SOURCE_DIR}/manifest.json")
-
-# Read Manifest Map
-if(EXISTS ${EXT_MANIFEST})
-	json_read("${EXT_MANIFEST}")
-	ans(man)
-else()
-	# Create Manifest Map
-	map()
-	end()
-	ans(man)
-endif()
-
-# Create backup of manifest to check for differences
-map_clone("${man}" DEEP)
-ans(man_bak)
-
-set(EXTERNAL_DIR ${EXTERNAL_DIR} CACHE INTERNAL "")
-
-include("${CMAKE_CURRENT_SOURCE_DIR}/luajit.cmake")
-include("${CMAKE_CURRENT_SOURCE_DIR}/test.cmake")
-
-# Output Manifest Map if Different
-map_equal_obj("${man}" "${man_bak}")
-if(NOT __ans)
-	json_write("${EXT_MANIFEST}" ${man})
-endif()
-
-# Fetch Modules
