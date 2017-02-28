@@ -5,6 +5,10 @@
   "gnu64": {
    "version": "2.0.4",
    "toolchain": "0.1.0"
+  },
+  "msvc64": {
+   "version": "2.0.4",
+   "toolchain": "0.1.0"
   }
  }
 },{
@@ -12,6 +16,10 @@
  "container": "https://github.com/openbbg/deptools/raw/master/packages",
  "platform": {
   "gnu64": {
+   "version": "3.2.1",
+   "toolchain": "0.1.0"
+  },
+  "msvc64": {
    "version": "3.2.1",
    "toolchain": "0.1.0"
   }

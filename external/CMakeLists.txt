@@ -102,6 +102,7 @@ foreach(pkg ${packages})
 	set(PKG_DISPLAY "${pkg_name}-${pkg_version}-${PLATFORM}")
 
 	# Generate install dir
+	set(PKG_SOURCE_DIR "${PACKAGE_DIR}/src/${PKG_DISPLAY}")
 	set(PKG_INSTALL_DIR "${PACKAGE_DIR}/${PKG_DISPLAY}")
 
 	# Generate simple name
