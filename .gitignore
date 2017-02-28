@@ -1,0 +1,9 @@
+build
+external/build
+external/cmake/cmakepp.cmake
+bin
+
+
+
+# VIM
+*.sw*
