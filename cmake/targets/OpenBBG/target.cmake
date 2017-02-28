@@ -2,7 +2,7 @@
 set(TARGET "OpenBBG")
 set(fileSources "${CMAKE_CURRENT_LIST_DIR}/sources.txt")
 set(fileTarget "${CMAKE_CURRENT_LIST_DIR}/target.cmake")
-set(pathBase "${SRC_DIR}")
+set(pathBase "${CMAKE_CURRENT_SOURCE_DIR}")
 
 _ParseTargetFileTreeIfChanged(${TARGET} ${fileSources} ${fileTarget} ${pathBase})
 
