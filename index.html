@@ -1,0 +1,232 @@
+<html>
+<head>
+<style type="text/css">
+  #container {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    position: absolute;
+    background-color: rgb(25, 25, 25);
+  }
+</style>
+</head>
+<body>
+<div id="container"></div>
+<script src="external/sigmajs/sigma.min.js"></script>
+<script src="external/sigmajs/plugins/sigma.parsers.json.min.js"></script>
+<script src="external/sigmajs/plugins/sigma.layout.forceAtlas2.min.js"></script>
+<script>
+  // Config
+  var color_edgeUncompleted = '#444';
+  var color_edgeCompleted = '#070';
+  var color_edgeImmediateUncompleted = '#750';
+
+  var gitOwner = 'openbbg';
+  var gitRepo = 'test-pages';
+
+  // Script
+  queryIssues = function() {
+    var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          //document.getElementById("demo").innerHTML = this.responseText;
+          processData(JSON.parse(this.responseText));
+        }
+    };
+    xhttp.open('GET', 'https://api.github.com/repos/' + gitOwner + '/' + gitRepo + '/issues?state=all', true);
+    xhttp.send();
+  }
+
+  processData = function(data) {
+    var issues = new Map();
+
+
+    for (var i = 0; i < data.length; ++i) {
+      var issue = data[i];
+
+      var isValid = false;
+      var firstColor = true;
+      for (var j = 0; j < issue.labels.length; ++j) {
+        var label = issue.labels[j];
+        if (label.name === 'task')
+          isValid = true;
+        else if (firstColor) {
+          firstColor = false;
+          issue._color = '#' + label.color;
+        }
+      }
+
+      if (firstColor)
+        issue._color = '#fff';
+
+      issue._size = 1;
+      issue._open = issue.state == 'open';
+
+
+      if (isValid == false)
+        continue;
+      issues.set(issue.number, issue);
+      var requireTagSearch = /Requires ((?:,? ?)#[0-9]+)+/g;
+      var requireTag = requireTagSearch.exec(issue.body);
+
+//      console.log(issue.number + ": |" + issue.body + "|");
+//      console.log(requireTag);
+      if (requireTag == null)
+        continue;
+      issue._requires = new Array();
+      var issueRefSearch = /(?:#)[0-9]+/g;
+      while (true) {
+        var v = issueRefSearch.exec(requireTag[0]);
+        if (v == null)
+          break;
+//        console.log(v[0] + " => " + parseInt(v[0].substr(1)));
+        issue._requires.push(parseInt(v[0].substr(1)));
+      }
+    }
+
+    // Calculate Size
+    issues.forEach(function (value, key, map) {
+      if (value._requires == null)
+        return;
+      for (var i = 0; i < value._requires.length; ++i) {
+        var req = value._requires[i];
+        var target = issues.get(req);
+        if (target == null)
+          continue;
+        ++value._size;
+        ++target._size;
+      }
+    });
+
+    var graph = {};
+    graph.nodes = new Array();
+    graph.edges = new Array();
+
+    var nextID = 0;
+
+    issues.forEach(function (value, key, map) {
+      graph.nodes.push({
+          'id': key,
+          'label': value.title,
+          'size': value._size,
+          'color': value._color,
+      });
+//      console.log("Node: " + key);
+
+      if (value._requires == null)
+        return;
+      for (var i = 0; i < value._requires.length; ++i) {
+        var req = value._requires[i];
+        var target = issues.get(req);
+//        console.log("Edge: " + key + " " + req + " (" + (target != null) + ")");
+        if (target == null)
+          continue;
+
+ //       console.log("Edge: " + key + " " + req);
+        var color;
+        if (value._open && target._open)
+          color = color_edgeUncompleted;
+        else if (value._open)
+          color = color_edgeImmediateUncompleted;
+        else
+          color = color_edgeCompleted;
+
+        graph.edges.push({
+          'id': nextID++,
+          'source': req,
+          'target': key,
+          'color': color,
+          'type': 'arrow',
+          'size': 1,
+        });
+      }
+    });
+	
+    // Detect WebGL
+	// REF: <https://get.webgl.org/>
+    var supportWebGL = true;
+    var canvas = document.createElement('canvas');
+    var gl;
+    try {
+      gl = canvas.getContext('webgl');
+    } catch (e) {
+      gl = null;
+    }
+    var experimental = false;
+    if (gl == null) {
+      try {
+        gl = canvas.getContext('experimental-webgl');
+        experimental = true;
+      } catch (e) {
+        gl = null;
+      }
+    }
+
+    canvas = undefined;
+
+    if (gl) {
+    } else if ("WebGLRenderingContext" in window) {
+      supportWebGL = false;
+    } else {
+      supportWebGL = false;
+    }
+
+    var rendererType = supportWebGL ? 'webgl' : 'canvas';
+
+    var sig = new sigma({
+      renderer: {
+        container: document.getElementById('container'),
+        type: rendererType,
+      },
+      settings: {
+        // Ref: https://github.com/jacomyal/sigma.js/wiki/Settings
+        defaultNodeColor: '#ec5148',
+        defaultLabelColor: '#fff',
+        labelSize: 'proportional',
+        labelSizeRatio: 2,
+        labelThreshold: 4,
+        edgeColor: 'target',
+        defaultEdgeType: 'arrow',
+        maxEdgeSize: 2,
+      },
+      graph: graph,
+    });
+
+    sig.bind('clickNode', function (node) {
+      window.open('https://github.com/' + gitOwner + '/' + gitRepo + '/issues/' + node.data.node.id);
+    });
+
+
+    // Reorganize nodes
+    // Ref: https://github.com/jacomyal/sigma.js/issues/336#issuecomment-103913700
+    sig.graph.nodes().forEach(function(node, i, a) {
+      node.x = Math.cos(Math.PI * 2 * i / a.length);
+      node.y = Math.sin(Math.PI * 2 * i / a.length);
+//      node.size = 8;
+//      node.color = '#f00';
+    });
+    sig.refresh();
+//    return;
+    sig.startForceAtlas2({
+//      worker: false,
+      worker: true,
+      adjustSizes: true,
+      gravity: 0.1,
+      slowDown: true,
+      outboundAttractionDistribution: true,
+      barnesHutOptimize: true,
+      linLogMode: false,
+      iterationsPerRender: 250,
+      strongGravityMode: false,
+    });
+
+    setTimeout(function(){
+      sig.killForceAtlas2();
+    }, 3000)
+  }
+
+  queryIssues();
+</script>
+</body>
+</html>
