@@ -6,8 +6,6 @@ set(pathBase "${CMAKE_CURRENT_SOURCE_DIR}")
 
 _ParseTargetFileTreeIfChanged(${TARGET} ${fileSources} ${fileTarget} ${pathBase})
 
-include("${BIN_EXT_DIR}/vars.cmake")
-
 
 # Define target
 add_executable(${TARGET} ${TARGET_${TARGET}_ABSOLUTE_SOURCES})
@@ -19,4 +17,3 @@ set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBIN
 set_target_properties(${TARGET} PROPERTIES DEBUG_POSTFIX -d)
 target_include_directories(${TARGET} PUBLIC ${INCLUDE})
 target_link_libraries(${TARGET} ${LIB})
-#add_dependencies(${TARGET} external)

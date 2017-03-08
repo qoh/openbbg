@@ -27,12 +27,11 @@ get_filename_component(MSVC_DIR ${CMAKE_CXX_COMPILER} DIRECTORY)
 set(MSVC_DIR ${MSVC_DIR}/../../..)
 
 if(MSVC)
-	add_custom_target(external COMMAND ${CMAKE_COMMAND} -E make_directory ${BIN_EXT_DIR}
-			& cd ${BIN_EXT_DIR}
-			& ${CMAKE_COMMAND} -Wno-dev -G ${CMAKE_GENERATOR}
+	execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} COMMAND ${CMAKE_COMMAND} -E make_directory ${BIN_EXT_DIR})
+	execute_process(WORKING_DIRECTORY ${BIN_EXT_DIR} COMMAND ${CMAKE_COMMAND} -Wno-dev -G ${CMAKE_GENERATOR}
 				-DEXTERNAL_DIR=${BIN_EXT_DIR}
-				${SRC_EXT_DIR}
-			& cmd.exe /C "cd ${MSVC_DIR} & cd Common7/Tools & VsDevCmd.bat & cd ../../VC & vcvarsall.bat amd64 & msbuild ${BIN_EXT_DIR}/ALL_BUILD.vcxproj /m /v:n /p:Configuration=Release /t:Build")
+				${SRC_EXT_DIR})
+	execute_process(WORKING_DIRECTORY ${BIN_EXT_DIR} COMMAND cmd.exe /C "cd ${MSVC_DIR} & cd Common7/Tools & VsDevCmd.bat & cd ../../VC & vcvarsall.bat amd64 & msbuild ${BIN_EXT_DIR}/ALL_BUILD.vcxproj /m /v:n /p:Configuration=Release /t:Build")
 endif()
 
 if(UNIX)
@@ -42,6 +41,8 @@ if(UNIX)
 				${SRC_EXT_DIR})
 	execute_process(WORKING_DIRECTORY ${BIN_EXT_DIR} COMMAND make -j)
 endif()
+
+include("${BIN_EXT_DIR}/vars.cmake")
 
 
 # Targets
