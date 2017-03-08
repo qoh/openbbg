@@ -115,4 +115,17 @@
    "toolchain": "0.1.0"
   }
  }
+},{
+ "name": "bullet",
+ "container": "https://github.com/openbbg/deptools/raw/master/packages",
+ "platform": {
+  "gnu64": {
+   "version": "2.86.1",
+   "toolchain": "0.1.0"
+  },
+  "msvc64": {
+   "version": "2.86.1",
+   "toolchain": "0.1.0"
+  }
+ }
 }]
