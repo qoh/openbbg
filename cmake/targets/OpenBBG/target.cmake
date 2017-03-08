@@ -23,3 +23,4 @@ set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBIN
 set_target_properties(${TARGET} PROPERTIES DEBUG_POSTFIX -d)
 target_include_directories(${TARGET} PUBLIC ${INCLUDE})
 target_link_libraries(${TARGET} ${LIB})
+target_compile_features(${TARGET} PRIVATE cxx_range_for)
