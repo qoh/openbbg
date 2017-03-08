@@ -134,9 +134,22 @@ foreach(pkg ${packages})
 #		include("${FILE_PKG_TOOLCHAIN_VARS}")
 #	endif()
 	# TODO: Use ${${NAME}_INCLUDE_DIRS} and ${${NAME}_LIBRARIES}
+	list(APPEND INCLUDE ${${PKG_SIMPLE_NAME}_INCLUDE_DIRS})
+	list(APPEND LIB ${${PKG_SIMPLE_NAME}_LIBRARIES})
 
 	list(APPEND PACKAGE_LIST ${PKG_DISPLAY})
 endforeach(p)
+
+
+# Go through and define variable mapping for the dependency simple names
+# Then go through again and make the external projects, whilst assigning the dependencies using the mappings, also build the include/lib
+
+
+
+
+
+
+
 
 
 # Dependency Solver
@@ -144,8 +157,8 @@ endforeach(p)
 
 # Export vars for parent list to execute
 file(WRITE ${EXTERNAL_DIR}/vars.cmake "\
-set(INCLUDE \"${INCLUDE}\")\n\
-set(LIB \"${LIB}\")\n\
+list(APPEND INCLUDE \"${INCLUDE}\")\n\
+list(APPEND LIB \"${LIB}\")\n\
 ")
 
 # Ideal Pipeline:
