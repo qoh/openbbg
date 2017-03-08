@@ -37,4 +37,17 @@
    "toolchain": "0.1.0"
   }
  }
+},{
+ "name": "freetype",
+ "container": "https://github.com/openbbg/deptools/raw/master/packages",
+ "platform": {
+  "gnu64": {
+   "version": "2.7.1",
+   "toolchain": "0.1.0"
+  },
+  "msvc64": {
+   "version": "2.7.1",
+   "toolchain": "0.1.0"
+  }
+ }
 }]
