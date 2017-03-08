@@ -9,6 +9,9 @@ _ParseTargetFileTreeIfChanged(${TARGET} ${fileSources} ${fileTarget} ${pathBase}
 if(UNIX)
 	list(APPEND LIB pthread)
 endif()
+if(MSVC)
+	list(APPEND LIB ws2_32)
+endif()
 
 # Define target
 add_executable(${TARGET} ${TARGET_${TARGET}_ABSOLUTE_SOURCES})
