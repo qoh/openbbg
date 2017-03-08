@@ -76,4 +76,17 @@
    "toolchain": "0.1.0"
   }
  }
+},{
+ "name": "zlib",
+ "container": "https://github.com/openbbg/deptools/raw/master/packages",
+ "platform": {
+  "gnu64": {
+   "version": "1.2.11",
+   "toolchain": "0.1.0"
+  },
+  "msvc64": {
+   "version": "1.2.11",
+   "toolchain": "0.1.0"
+  }
+ }
 }]
