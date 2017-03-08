@@ -128,4 +128,17 @@
    "toolchain": "0.1.0"
   }
  }
+},{
+ "name": "assimp",
+ "container": "https://github.com/openbbg/deptools/raw/master/packages",
+ "platform": {
+  "gnu64": {
+   "version": "3.3.1",
+   "toolchain": "0.1.0"
+  },
+  "msvc64": {
+   "version": "3.3.1",
+   "toolchain": "0.1.0"
+  }
+ }
 }]
