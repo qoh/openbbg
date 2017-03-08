@@ -6,6 +6,9 @@ set(pathBase "${CMAKE_CURRENT_SOURCE_DIR}")
 
 _ParseTargetFileTreeIfChanged(${TARGET} ${fileSources} ${fileTarget} ${pathBase})
 
+if(UNIX)
+	list(APPEND LIB pthread)
+endif()
 
 # Define target
 add_executable(${TARGET} ${TARGET_${TARGET}_ABSOLUTE_SOURCES})
