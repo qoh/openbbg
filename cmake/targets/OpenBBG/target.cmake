@@ -19,4 +19,4 @@ set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBIN
 set_target_properties(${TARGET} PROPERTIES DEBUG_POSTFIX -d)
 target_include_directories(${TARGET} PUBLIC ${INCLUDE})
 target_link_libraries(${TARGET} ${LIB})
-add_dependencies(${TARGET} external)
+#add_dependencies(${TARGET} external)

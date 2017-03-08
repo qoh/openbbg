@@ -36,12 +36,11 @@ if(MSVC)
 endif()
 
 if(UNIX)
-	add_custom_target(external COMMAND ${CMAKE_COMMAND} -E make_directory ${BIN_EXT_DIR}
-			& cd ${BIN_EXT_DIR}
-			& ${CMAKE_COMMAND} -Wno-dev -G ${CMAKE_GENERATOR}
+	execute_process(WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} COMMAND ${CMAKE_COMMAND} -E make_directory ${BIN_EXT_DIR})
+	execute_process(WORKING_DIRECTORY ${BIN_EXT_DIR} COMMAND ${CMAKE_COMMAND} -Wno-dev -G ${CMAKE_GENERATOR}
 				-DEXTERNAL_DIR=${BIN_EXT_DIR}
-				${SRC_EXT_DIR}
-			& make -j5)
+				${SRC_EXT_DIR})
+	execute_process(WORKING_DIRECTORY ${BIN_EXT_DIR} COMMAND make -j)
 endif()
 
 
