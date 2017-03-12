@@ -1,5 +1,11 @@
 macro(_ParseTargetFileTreeIfChanged TARGET fileSources fileTarget pathBase)
 
+set(extra "${ARGN}")
+if(extra EQUAL 1)
+	set(createMissing 1)
+else()
+	set(createMissing 0)
+endif()
 
 file(MD5 ${fileSources} md5Sources)
 file(MD5 ${fileTarget} md5Target)
@@ -41,7 +47,13 @@ if(NOT TARGET_${TARGET}_SOURCES_MD5 STREQUAL md5Sources
 				math(EXPR T "${T} - 1")
 				string(CONCAT T___PATH ${T___PATHSTACK_${T}} ${T___PATH})
 			endwhile()
-			list(APPEND files "${T___PATH}${value}")
+			set(file "${T___PATH}${value}")
+			if(createMissing)
+				if(NOT EXISTS ${file})
+					file(WRITE "${pathBase}/${file}" "")
+				endif()
+			endif()
+			list(APPEND files "${file}")
 		endif()
 	endforeach()
 

@@ -15,6 +15,7 @@ set(TOOLCHAIN_DIR "${EXTERNAL_DIR}/toolchains")
 # Project Definition
 
 project(external)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 
 # Platform Detection

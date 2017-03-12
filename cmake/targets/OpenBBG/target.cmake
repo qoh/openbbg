@@ -4,7 +4,7 @@ set(fileSources "${CMAKE_CURRENT_LIST_DIR}/sources.txt")
 set(fileTarget "${CMAKE_CURRENT_LIST_DIR}/target.cmake")
 set(pathBase "${CMAKE_CURRENT_SOURCE_DIR}")
 
-_ParseTargetFileTreeIfChanged(${TARGET} ${fileSources} ${fileTarget} ${pathBase})
+_ParseTargetFileTreeIfChanged(${TARGET} ${fileSources} ${fileTarget} ${pathBase} 1)
 
 if(UNIX)
 	list(APPEND LIB pthread)
@@ -20,6 +20,7 @@ set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OU
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUT_DIR})
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${OUT_DIR})
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${OUT_DIR})
+set_target_properties(${TARGET} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${OUT_DIR}")
 set_target_properties(${TARGET} PROPERTIES DEBUG_POSTFIX -d)
 target_include_directories(${TARGET} PUBLIC ${INCLUDE})
 target_link_libraries(${TARGET} ${LIB})

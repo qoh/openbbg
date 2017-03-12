@@ -10,12 +10,12 @@
 				target.cmake
 	src/
 		main.cpp
-		test.cpp
 		OpenBBG/
+			Job.cpp
+			Job.h
+			Module.cpp
 			Module.h
-			Config/
-				Developer.h
 			Modules/
-			UI/
-				UI_Context.h
-				UI_Context.cpp
+				Startup/
+					Module_Window.cpp
+					Module_Window.h
