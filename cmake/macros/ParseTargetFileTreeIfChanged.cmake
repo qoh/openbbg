@@ -49,7 +49,7 @@ if(NOT TARGET_${TARGET}_SOURCES_MD5 STREQUAL md5Sources
 			endwhile()
 			set(file "${T___PATH}${value}")
 			if(createMissing)
-				if(NOT EXISTS ${file})
+				if(NOT EXISTS "${pathBase}/${file}")
 					file(WRITE "${pathBase}/${file}" "")
 				endif()
 			endif()
