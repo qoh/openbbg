@@ -25,22 +25,29 @@
   var gitOwner = 'openbbg';
   var gitRepo = 'openbbg';
 
+  var accumulated = [];
+
   // Script
-  queryIssues = function() {
+  queryIssues = function(page) {
     var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
           //document.getElementById("demo").innerHTML = this.responseText;
-          processData(JSON.parse(this.responseText));
+          var data = JSON.parse(this.responseText);
+          if (data.length == 0) {
+            processData(accumulated);
+          } else {
+            accumulated = accumulated.concat(data);
+            queryIssues(page + 1);
+          }
         }
     };
-    xhttp.open('GET', 'https://api.github.com/repos/' + gitOwner + '/' + gitRepo + '/issues?state=all', true);
+    xhttp.open('GET', 'https://api.github.com/repos/' + gitOwner + '/' + gitRepo + '/issues?state=all&page=' + page, true);
     xhttp.send();
   }
 
   processData = function(data) {
     var issues = new Map();
-
 
     for (var i = 0; i < data.length; ++i) {
       var issue = data[i];
@@ -226,7 +233,7 @@
     }, 3000)
   }
 
-  queryIssues();
+  queryIssues(1);
 </script>
 </body>
 </html>
