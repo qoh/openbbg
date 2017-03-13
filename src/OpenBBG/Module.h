@@ -4,8 +4,6 @@
 #include <OpenBBG/Config.h>
 
 
-//------------------------------------------------------------------------
-
 namespace openbbg {
 
 typedef struct Game Game;
