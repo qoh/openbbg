@@ -4,6 +4,8 @@
 #include <OpenBBG/Module.h>
 
 namespace openbbg {
+	
+typedef struct Module_Dummy Module_Dummy;
 
 struct Module_Dummy : Module
 {

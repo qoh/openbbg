@@ -4,8 +4,11 @@
 #include <OpenBBG/Module.h>
 #include <OpenBBG/Game.h>
 #include <OpenBBG/Job.h>
+#include <OpenBBG/Modules/Module_Window.h>
 
 #include <GLFW/glfw3.h>
+
+#define TEST 0
 
 struct test
 {
@@ -36,7 +39,8 @@ int entryFunc(int argc, char *argv[])
 	Module::PhaseInit(&game, Module::Phase_Startup);
 
 	// Main Loop
-#if 1
+	{
+#if TEST
 	test asdf;
 	asdf.a = 25;
 
@@ -45,7 +49,6 @@ int entryFunc(int argc, char *argv[])
 
 	double startTime = glfwGetTime();
 	
-	{
 #if 0
 	JobPool testPool(&game, false);
 
@@ -82,13 +85,20 @@ int entryFunc(int argc, char *argv[])
 #endif
 #endif
 
+	while (Module_Window::ShouldClose() == false) {
+		Module_Window::ProcessEvents();
+	}
+
+
 	// Cleanup
 	game.isRunning = false;
 
 	Module::PhaseCleanup(&game, Module::Phase_Startup);
 	}
+#if TEST
 	double finTime = glfwGetTime();
 	LOG_INFO("Elapsed Time: {}", finTime - startTime);
+#endif
 
 	Log::Cleanup();
 	return 0;
