@@ -27,10 +27,16 @@ namespace openbbg {
 
 int entryFunc(int argc, char *argv[])
 {
+	Log::Init();
 	glfwInit();
 
 	Game game;
 
+	// Init
+	Module::PhaseInit(&game, Module::Phase_Startup);
+
+	// Main Loop
+#if 1
 	test asdf;
 	asdf.a = 25;
 
@@ -38,19 +44,20 @@ int entryFunc(int argc, char *argv[])
 	b->a = 50;
 
 	double startTime = glfwGetTime();
-
+	
+	{
 #if 0
 	JobPool testPool(&game, false);
 
 	for (uint32_t a = 0; a < 3000; ++a)
 	testPool.Queue([&testPool, asdf, b]() {
-		printf("Job: %d %d\n", asdf.a, b->a);
+		LOG_INFO("Job: {} {}", asdf.a, b->a);
 
 		testPool.Queue([&testPool]() {
-			printf("Embedded Job\n");
+			LOG_INFO("Embedded Job");
 			
 			testPool.Queue([&testPool]() {
-				printf("Embedded Job 2\n");
+				LOG_INFO("Embedded Job 2");
 			});
 		});
 	});
@@ -59,35 +66,31 @@ int entryFunc(int argc, char *argv[])
 	testPool.ProcessAllCurrent();
 	testPool.ProcessAllCurrent();
 #else
-	JobPool testPool(&game, true, 10);
+	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
+	JobPool testPool(true, game.isRunning, concurentThreadsSupported == 0 ? 8 : concurentThreadsSupported);
 
 	for (uint32_t a = 0; a < 3000; ++a)
 	testPool.Queue([&testPool, asdf, b]() {
-//		printf("Job: %d %d\n", asdf.a, b->a);
-
+		LOG_INFO("Job: {} {}", asdf.a, b->a);
 		testPool.Queue([&testPool]() {
-//			printf("Embedded Job\n");
-			
+			LOG_INFO("Embedded Job");
 			testPool.Queue([&testPool]() {
-//				printf("Embedded Job 2\n");
+				LOG_INFO("Embedded Job 2");
 			});
 		});
 	});
 #endif
-
-	// Init
-	Module::PhaseInit(&game, Module::Phase_Startup);
-
-	// Main Loop
+#endif
 
 	// Cleanup
 	game.isRunning = false;
+
 	Module::PhaseCleanup(&game, Module::Phase_Startup);
-	
+	}
 	double finTime = glfwGetTime();
+	LOG_INFO("Elapsed Time: {}", finTime - startTime);
 
-	printf("Elapsed Time: %f\n", finTime - startTime);
-
+	Log::Cleanup();
 	return 0;
 }
 

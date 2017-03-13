@@ -15,14 +15,16 @@ struct JobPool
 	std::condition_variable cv;
 	deque<function<void()>> jobs;
 	vector<std::thread> threads;
+	volatile bool &keepAlive;
 
-	JobPool(Game *game, bool isAsync, uint16_t numThreads = 1)
+	JobPool(bool isAsync, volatile bool &keepAlive, uint16_t numThreads = 1)
 		: isAsync(isAsync)
+		, keepAlive(keepAlive)
 	{
 		if (isAsync) {
 			threads.reserve(numThreads);
 			for (uint16_t a = 0; a < numThreads; ++a)
-				threads.push_back(std::thread(WorkerFunc, game, this));
+				threads.push_back(std::thread(WorkerFunc, this));
 		}
 	}
 
@@ -55,7 +57,7 @@ struct JobPool
 			job();
 	}
 
-	static void WorkerFunc(Game *game, JobPool *pool);
+	static void WorkerFunc(JobPool *pool);
 };
 
 

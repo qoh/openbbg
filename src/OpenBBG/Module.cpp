@@ -45,7 +45,7 @@ void Module::PhaseInit(Game *game, LoadingPhase phase)
 		
 		// Attempt to load module
 		if (def->isEnabled) {
-			printf("Init: %s\n", def->name.c_str());
+			LOG_DEBUG("Init: {}", def->name);
 			def->isLoaded = def->instance->ModuleInit(game);
 		}
 
@@ -71,7 +71,7 @@ void Module::PhaseCleanup(Game *game, LoadingPhase phase)
 	while (it != end) {
 		const ModuleDef *def = *it;
 		if (def->isLoaded) {
-			printf("Cleanup: %s\n", def->name.c_str());
+			LOG_DEBUG("Cleanup: {}", def->name);
 			def->instance->ModuleCleanup(game);
 		}
 		++it;

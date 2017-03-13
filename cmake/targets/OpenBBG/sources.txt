@@ -22,6 +22,8 @@
 			Game.h
 			Job.cpp
 			Job.h
+			Log.cpp
+			Log.h
 			Module.cpp
 			Module.h
 			External/
