@@ -20,6 +20,7 @@ shared_ptr<spdlog::logger> Log::s_logError;
 bool Log::Init()
 {
 	const char *logFormat = "[%Y-%m-%d %T.%e] [%l] %v";
+	const char *logFile = "console.log";
 
 #ifdef NDEBUG
 	spdlog::set_level(spdlog::level::info);
@@ -31,14 +32,17 @@ bool Log::Init()
 	{
 		auto distSink = make_shared<spdlog::sinks::dist_sink_mt>();
 	
-		// stdout
-		distSink->add_sink(make_shared<spdlog::sinks::stdout_sink_mt>());
-
 		// MSVC Debugger Console
 #ifdef _WIN32
 		if (IsDebuggerPresent())
 			distSink->add_sink(make_shared<spdlog::sinks::msvc_sink_mt>());
 #endif
+
+		// stdout
+		distSink->add_sink(make_shared<spdlog::sinks::stdout_sink_mt>());
+
+		// Log File
+		distSink->add_sink(make_shared<spdlog::sinks::simple_file_sink_mt>(logFile, true));
 
 		s_logOutput = make_shared<spdlog::logger>("output", distSink);
 		spdlog::register_logger(s_logOutput);

@@ -2,6 +2,7 @@ build
 external/build
 external/cmake/cmakepp.cmake
 bin
+console.log
 
 
 
