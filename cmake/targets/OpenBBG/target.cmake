@@ -7,7 +7,7 @@ set(pathBase "${CMAKE_CURRENT_SOURCE_DIR}")
 _ParseTargetFileTreeIfChanged(${TARGET} ${fileSources} ${fileTarget} ${pathBase} 1)
 
 if(UNIX)
-	list(APPEND LIB pthread)
+	list(APPEND LIB X11 Xxf86vm Xrandr pthread Xi m dl Xinerama Xcursor)
 endif()
 if(MSVC)
 	list(APPEND LIB ws2_32)
