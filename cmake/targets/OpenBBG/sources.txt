@@ -1,4 +1,8 @@
 /
+	assets/
+		scripts/
+			sandbox.lua
+			test.lua
 	cmake/
 		Macros.cmake
 		Targets.cmake
@@ -25,5 +29,7 @@
 				Module_Dummy.h
 				Module_Game.cpp
 				Module_Game.h
+				Module_Lua.cpp
+				Module_Lua.h
 				Module_Window.cpp
 				Module_Window.h
