@@ -11,11 +11,19 @@
 	src/
 		main.cpp
 		OpenBBG/
+			Config.h
+			Game.cpp
+			Game.h
 			Job.cpp
 			Job.h
 			Module.cpp
 			Module.h
+			External/
+				EASTL.cpp
 			Modules/
-				Startup/
-					Module_Window.cpp
-					Module_Window.h
+				Module_Dummy.cpp
+				Module_Dummy.h
+				Module_Game.cpp
+				Module_Game.h
+				Module_Window.cpp
+				Module_Window.h

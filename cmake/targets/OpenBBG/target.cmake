@@ -22,7 +22,7 @@ set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL $
 set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${OUT_DIR})
 set_target_properties(${TARGET} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${OUT_DIR}")
 set_target_properties(${TARGET} PROPERTIES DEBUG_POSTFIX -d)
-target_include_directories(${TARGET} PUBLIC ${INCLUDE})
+target_include_directories(${TARGET} PUBLIC ${pathBase}/src ${INCLUDE})
 target_link_libraries(${TARGET} ${LIB})
 target_compile_features(${TARGET} PRIVATE cxx_range_for)
 if(MSVC)
