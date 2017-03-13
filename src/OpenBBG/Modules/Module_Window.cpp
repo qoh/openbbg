@@ -5,11 +5,14 @@
 #include <OpenBBG/Game.h>
 
 // GLFW
-#include <glfw/glfw3.h>
+#include <GLFW/glfw3.h>
 #ifdef WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
 #endif
-#include <glfw/glfw3native.h>
+#if linux
+#define GLFW_EXPOSE_NATIVE_X11
+#endif
+#include <GLFW/glfw3native.h>
 
 // Windows
 #ifdef WIN32

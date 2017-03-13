@@ -22,12 +22,6 @@ bool Log::Init()
 	const char *logFormat = "[%Y-%m-%d %T.%e] [%l] %v";
 	const char *logFile = "console.log";
 
-#ifdef NDEBUG
-	spdlog::set_level(spdlog::level::info);
-#else
-	spdlog::set_level(spdlog::level::debug);
-#endif
-
 	// Output Logger
 	{
 		auto distSink = make_shared<spdlog::sinks::dist_sink_mt>();
@@ -54,6 +48,14 @@ bool Log::Init()
 	s_logError = spdlog::stderr_logger_mt("error");
 	s_logError->set_pattern(logFormat);
 	s_logError->flush_on(spdlog::level::debug);
+
+
+	// Set log level (must come after log initialization)
+#ifdef NDEBUG
+	spdlog::set_level(spdlog::level::info);
+#else
+	spdlog::set_level(spdlog::level::debug);
+#endif
 
 	return true;
 }
