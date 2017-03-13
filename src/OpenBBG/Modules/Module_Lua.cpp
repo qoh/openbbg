@@ -7,10 +7,6 @@
 
 // LuaJIT
 #include <lua.hpp>
-// Required for custom library loading
-#define lib_init_c
-#define LUA_LIB
-#include "lj_arch.h"
 
 #define DO_SANDBOX 1
 
