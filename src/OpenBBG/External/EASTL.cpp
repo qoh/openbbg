@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 #pragma warning( disable : 4290 )
 
 // REF: https://github.com/electronicarts/EASTL/blob/master/doc/SampleNewAndDelete.cpp

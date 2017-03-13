@@ -23,8 +23,10 @@ set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBIN
 set_target_properties(${TARGET} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 set_target_properties(${TARGET} PROPERTIES DEBUG_POSTFIX -d)
 target_include_directories(${TARGET} PUBLIC ${pathBase}/src ${INCLUDE})
+
 target_link_libraries(${TARGET} ${LIB})
 target_compile_features(${TARGET} PRIVATE cxx_range_for)
 if(MSVC)
-	target_compile_options(${TARGET} PUBLIC /openmp)
+	set_source_files_properties(${pathBase}/src/stdafx.cpp PROPERTIES COMPILE_FLAGS /Yc"stdafx.h")
+	target_compile_options(${TARGET} PUBLIC /openmp /Yu"stdafx.h")
 endif()

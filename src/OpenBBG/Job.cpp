@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 // OpenBBG
 #include <OpenBBG/Job.h>
 #include <OpenBBG/Game.h>

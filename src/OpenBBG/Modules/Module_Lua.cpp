@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 // OpenBBG
 #include <OpenBBG/Modules/Module_Lua.h>
 #include <OpenBBG/Game.h>

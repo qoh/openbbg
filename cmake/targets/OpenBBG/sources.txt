@@ -14,6 +14,8 @@
 				target.cmake
 	src/
 		main.cpp
+		stdafx.cpp
+		stdafx.h
 		OpenBBG/
 			Config.h
 			Game.cpp
