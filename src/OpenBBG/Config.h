@@ -1,6 +1,6 @@
 #pragma once
 
-#define USE_EASTL 0
+#define USE_EASTL 1
 
 // Assert on all build configs
 #ifdef NDEBUG
@@ -21,6 +21,7 @@
 using namespace eastl;
 #else
 // Standard Library
+#include <algorithm>
 #include <string>
 #include <deque>
 #include <map>

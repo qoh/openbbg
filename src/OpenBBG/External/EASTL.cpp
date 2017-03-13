@@ -5,6 +5,7 @@
 // Standard Library
 #include <stddef.h>
 #include <new>
+#include <cstdlib>
 
 // EASTL
 #include <EABase/eabase.h>
