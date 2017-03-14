@@ -1,7 +1,5 @@
 #include "stdafx.h"
 
-#define TEST_VULKAN 1
-
 // OpenBBG
 #include <OpenBBG/Modules/Module_Window.h>
 #include <OpenBBG/Window.h>
@@ -27,7 +25,7 @@ void CallbackClose(GLFWwindow *window)
 
 void CallbackFocusChange(GLFWwindow *window, int state)
 {
-	Module_Window::HandleFocusChange(static_cast<Window *>(glfwGetWindowUserPointer(window)), state == GLFW_TRUE);
+	Module_Window::HandleFocusChange(static_cast<Window *>(glfwGetWindowUserPointer(window)), GLFW_TRUE == state);
 }
 
 void CallbackFramebufferSizeChange(GLFWwindow *window, int x, int y)
@@ -37,7 +35,7 @@ void CallbackFramebufferSizeChange(GLFWwindow *window, int x, int y)
 
 void CallbackIconifyChange(GLFWwindow *window, int state)
 {
-	Module_Window::HandleIconifyChange(static_cast<Window *>(glfwGetWindowUserPointer(window)), state == GLFW_TRUE);
+	Module_Window::HandleIconifyChange(static_cast<Window *>(glfwGetWindowUserPointer(window)), GLFW_TRUE == state);
 }
 
 void CallbackPositionChange(GLFWwindow *window, int x, int y)
@@ -63,9 +61,34 @@ void CallbackCharacter(GLFWwindow *window, unsigned int codepoint)
 	Module_Window::HandleCharacter(static_cast<Window *>(glfwGetWindowUserPointer(window)), codepoint);
 }
 
+void CallbackCursorEnter(GLFWwindow *window, int entered)
+{
+	Module_Window::HandleCursorEnter(static_cast<Window *>(glfwGetWindowUserPointer(window)), GLFW_TRUE == entered);
+}
+
+void CallbackCursorPositionChange(GLFWwindow *window, double x, double y)
+{
+	Module_Window::HandleCursorPositionChange(static_cast<Window *>(glfwGetWindowUserPointer(window)), x, y);
+}
+
 void CallbackKey(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
 	Module_Window::HandleKey(static_cast<Window *>(glfwGetWindowUserPointer(window)), key, scancode, action, mods);
+}
+
+void CallbackMouseButton(GLFWwindow *window, int button, int action, int mods)
+{
+	Module_Window::HandleMouseButton(static_cast<Window *>(glfwGetWindowUserPointer(window)), button, action, mods);
+}
+
+void CallbackScroll(GLFWwindow *window, double x, double y)
+{
+	Module_Window::HandleScroll(static_cast<Window *>(glfwGetWindowUserPointer(window)), x, y);
+}
+
+void CallbackFileDrop(GLFWwindow *window, int count, const char **files)
+{
+	Module_Window::HandleFileDrop(static_cast<Window *>(glfwGetWindowUserPointer(window)), count, files);
 }
 
 
@@ -80,11 +103,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	switch (uMsg) {
 	case WM_DPICHANGED: {
-		WORD xAxis = LOWORD(wParam);
-		WORD yAxis = HIWORD(wParam);
-		float xScale = (float)xAxis / 96.f;
-		float yScale = (float)yAxis / 96.f;
-		LOG_DEBUG("DPI Changed: {} {}", xScale, yScale);
+		WORD x = LOWORD(wParam);
+		WORD y = HIWORD(wParam);
+		Module_Window::HandleDPIChange(window, x, y);
 	}	break;
 	}
 
@@ -150,6 +171,7 @@ void Module_Window::SetHandlers(Window *window)
 	SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)WindowProc);
 #endif
 
+	// Window Callbacks
 	glfwSetWindowPosCallback(window->glfwWindow, CallbackPositionChange);
 	glfwSetWindowSizeCallback(window->glfwWindow, CallbackSizeChange);
 	glfwSetWindowCloseCallback(window->glfwWindow, CallbackClose);
@@ -157,6 +179,15 @@ void Module_Window::SetHandlers(Window *window)
 	glfwSetWindowFocusCallback(window->glfwWindow, CallbackFocusChange);
 	glfwSetWindowIconifyCallback(window->glfwWindow, CallbackIconifyChange);
 	glfwSetFramebufferSizeCallback(window->glfwWindow, CallbackFramebufferSizeChange);
+	
+	// Input Callbacks
+	glfwSetCharCallback(window->glfwWindow, CallbackCharacter);
+	glfwSetCursorEnterCallback(window->glfwWindow, CallbackCursorEnter);
+	glfwSetCursorPosCallback(window->glfwWindow, CallbackCursorPositionChange);
+	glfwSetKeyCallback(window->glfwWindow, CallbackKey);
+	glfwSetMouseButtonCallback(window->glfwWindow, CallbackMouseButton);
+	glfwSetScrollCallback(window->glfwWindow, CallbackScroll);
+	glfwSetDropCallback(window->glfwWindow, CallbackFileDrop);
 }
 
 // Window Events
@@ -203,7 +234,29 @@ void Module_Window::HandleCharacter(Window *window, unsigned int codepoint)
 {
 }
 
+void Module_Window::HandleCursorEnter(Window *window, bool isCursorIn)
+{
+}
+
+void Module_Window::HandleCursorPositionChange(Window *window, double x, double y)
+{
+}
+
 void Module_Window::HandleKey(Window *window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_ESCAPE)
+		glfwSetWindowShouldClose(window->glfwWindow, GLFW_TRUE);
+}
+
+void Module_Window::HandleMouseButton(Window *window, int button, int action, int mods)
+{
+}
+
+void Module_Window::HandleScroll(Window *window, double x, double y)
+{
+}
+
+void Module_Window::HandleFileDrop(Window *window, int count, const char **files)
 {
 }
 

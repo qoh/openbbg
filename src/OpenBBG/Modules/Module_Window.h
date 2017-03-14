@@ -41,7 +41,12 @@ struct Module_Window : Module
 	// Input Events
 	// REF: http://www.glfw.org/docs/latest/group__input.html
 	static void HandleCharacter(Window *window, unsigned int codepoint);
+	static void HandleCursorEnter(Window *window, bool isCursorIn);
+	static void HandleCursorPositionChange(Window *window, double x, double y);
 	static void HandleKey(Window *window, int key, int scancode, int action, int mods);
+	static void HandleMouseButton(Window *window, int button, int action, int mods);
+	static void HandleScroll(Window *window, double x, double y);
+	static void HandleFileDrop(Window *window, int count, const char **files);
 
 	static void SetHandlers(Window *window);
 
