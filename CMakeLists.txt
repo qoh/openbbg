@@ -4,6 +4,10 @@ include(ExternalProject)
 project(OpenBBG)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# Options
+
+option(WITH_VULKAN "" OFF)
+
 
 # Paths
 

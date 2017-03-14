@@ -21,18 +21,29 @@ struct Module_Window : Module
 	virtual void ModuleCleanup(Game *game);
 
 	static bool ShouldClose();
+	static void ForceClose();
 	static void ProcessEvents();
 
 
-	//-------------- Window Event Handlers -------------
-
-	static void HandlePositionChange(Window *window, int x, int y);
-	static void HandleSizeChange(Window *window, int x, int y);
+	//-------------- Event Handlers -------------
+	
+	// Window Events
+	// REF: http://www.glfw.org/docs/latest/group__window.html
 	static void HandleClose(Window *window);
-	static void HandleRefresh(Window *window);
+	static void HandleDPIChange(Window *window, int x, int y);
 	static void HandleFocusChange(Window *window, bool hasFocus);
-	static void HandleIconifyChange(Window *window, bool isIconified);
 	static void HandleFramebufferSizeChange(Window *window, int x, int y);
+	static void HandleIconifyChange(Window *window, bool isIconified);
+	static void HandlePositionChange(Window *window, int x, int y);
+	static void HandleRefresh(Window *window);
+	static void HandleSizeChange(Window *window, int x, int y);
+
+	// Input Events
+	// REF: http://www.glfw.org/docs/latest/group__input.html
+	static void HandleCharacter(Window *window, unsigned int codepoint);
+	static void HandleKey(Window *window, int key, int scancode, int action, int mods);
+
+	static void SetHandlers(Window *window);
 
 
 	//------------------------------------------------

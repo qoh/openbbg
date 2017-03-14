@@ -18,14 +18,20 @@
 		stdafx.h
 		OpenBBG/
 			Config.h
+			Dummy.cpp
+			Dummy.h
 			Game.cpp
 			Game.h
+			InternalConfig.h
+			InternalConfig.h.in
 			Job.cpp
 			Job.h
 			Log.cpp
 			Log.h
 			Module.cpp
 			Module.h
+			Window.cpp
+			Window.h
 			External/
 				EASTL.cpp
 			Modules/
@@ -37,3 +43,6 @@
 				Module_Lua.h
 				Module_Window.cpp
 				Module_Window.h
+			Renderer/
+				Renderer_Vulkan.cpp
+				Renderer_Vulkan.h

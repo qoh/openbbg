@@ -4,6 +4,19 @@ set(fileSources "${CMAKE_CURRENT_LIST_DIR}/sources.txt")
 set(fileTarget "${CMAKE_CURRENT_LIST_DIR}/target.cmake")
 set(pathBase "${CMAKE_CURRENT_SOURCE_DIR}")
 
+# Vulkan
+if(WITH_VULKAN)
+	find_package(Vulkan)
+	if(Vulkan_FOUND)
+		list(APPEND INCLUDE ${Vulkan_INCLUDE_DIRS})
+		list(APPEND LIB ${Vulkan_LIBRARIES})
+	endif()
+endif()
+
+# Config
+set(OPENBBG_WITH_VULKAN ${WITH_VULKAN})
+configure_file("${pathBase}/src/OpenBBG/InternalConfig.h.in" "${pathBase}/src/OpenBBG/InternalConfig.h")
+
 _ParseTargetFileTreeIfChanged(${TARGET} ${fileSources} ${fileTarget} ${pathBase} 1)
 
 if(UNIX)

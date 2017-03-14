@@ -1,0 +1,3 @@
+#pragma once
+
+#cmakedefine01 OPENBBG_WITH_VULKAN 

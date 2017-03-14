@@ -3,6 +3,7 @@ external/build
 external/cmake/cmakepp.cmake
 bin
 console.log
+src/OpenBBG/InternalConfig.h
 
 
 
