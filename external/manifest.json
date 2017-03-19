@@ -167,4 +167,17 @@
    "toolchain": "0.1.0"
   }
  }
+},{
+ "name": "glm",
+ "container": "https://github.com/openbbg/deptools/raw/master/packages",
+ "platform": {
+  "gnu64": {
+   "version": "0.9.8.4",
+   "toolchain": "0.1.0"
+  },
+  "msvc64": {
+   "version": "0.9.8.4",
+   "toolchain": "0.1.0"
+  }
+ }
 }]
