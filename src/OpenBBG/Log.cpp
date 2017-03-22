@@ -42,8 +42,15 @@ bool Log::Init()
 		if (IsDebuggerPresent())
 			distSink->add_sink(make_shared<spdlog::sinks::msvc_sink_mt>());
 #endif
+
 		// Log File
-		distSink->add_sink(make_shared<spdlog::sinks::simple_file_sink_mt>(logFile, true));
+		std::shared_ptr<spdlog::sinks::simple_file_sink_mt> logFileSink;
+		try {
+			logFileSink = make_shared<spdlog::sinks::simple_file_sink_mt>(logFile, true);
+		} catch(...) {
+		}
+		if (logFileSink.get() != nullptr)
+			distSink->add_sink(logFileSink);
 
 		s_logMain = make_shared<spdlog::logger>("main", distSink);
 		spdlog::register_logger(s_logMain);
