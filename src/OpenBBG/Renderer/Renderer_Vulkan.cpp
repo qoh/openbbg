@@ -410,7 +410,7 @@ void Renderer_Vulkan::Init()
 
 void Renderer_Vulkan::ResizeFramebuffer(int x, int y)
 {
-	if (global.width == x && global.height == y)
+	if ((global.width == x && global.height == y) || x == 0 || y == 0)
 		return;
 	global.width = x;
 	global.height = y;
@@ -424,7 +424,7 @@ void Renderer_Vulkan::ResizeFramebuffer(int x, int y)
 	global.renderNode->CreateImagesAndViews(global.device, global.physicalDevices[0], global.deviceMemoryProperties);
 	global.renderNode->CreateFramebuffers(global.device);
 
-	// Uniform Buffer
+	// Uniform Buffer & Descriptor Set
 	vkDestroyBuffer(global.device, info.uniform_data.buf, NULL);
 	vkFreeMemory(global.device, info.uniform_data.mem, NULL);
 	vkFreeDescriptorSets(global.device, info.desc_pool, (uint32_t)info.desc_set.size(), info.desc_set.data());

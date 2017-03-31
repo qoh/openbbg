@@ -22,6 +22,7 @@ struct Game
 		: isRunning(true)
 		, jobsFrameStart { isRunning, false }
 		, jobsFrameEnd { isRunning, false }
+		, jobsAsync { isRunning, true, std::thread::hardware_concurrency() }
 	{
 		s_instance = this;
 	}
@@ -29,6 +30,8 @@ struct Game
 	JobPool jobsFrameStart;
 
 	JobPool jobsFrameEnd;
+
+	JobPool jobsAsync;
 };
 
 
