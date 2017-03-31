@@ -180,4 +180,17 @@
    "toolchain": "0.1.0"
   }
  }
+},{
+ "name": "glslang",
+ "container": "https://github.com/openbbg/deptools/raw/master/packages",
+ "platform": {
+  "gnu64": {
+   "version": "5a8390696de075f421084f18cc8f6b1245920311",
+   "toolchain": "0.1.0"
+  },
+  "msvc64": {
+   "version": "5a8390696de075f421084f18cc8f6b1245920311",
+   "toolchain": "0.1.0"
+  }
+ }
 }]

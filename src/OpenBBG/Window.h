@@ -4,7 +4,7 @@
 #include <OpenBBG/Renderer/Renderer_Vulkan.h>
 
 // GLFW
-#if TEST_VULKAN
+#if OPENBBG_WITH_VULKAN
 #define GLFW_INCLUDE_VULKAN
 #endif
 #include <GLFW/glfw3.h>
@@ -37,6 +37,8 @@ struct Window
 	RendererType rendererType;
 
 	Renderer renderer;
+
+	glm::ivec2 framebufferSize;
 
 	static Window *CreateVulkanWindow(int width, int height, const char *title);
 

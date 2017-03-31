@@ -154,6 +154,15 @@ bool Module_Window::ShouldClose()
 void Module_Window::ProcessEvents()
 {
 	glfwPollEvents();
+	// TEMP
+	for (auto window : s_moduleInstance->windows)
+		if (window->renderer.ptr != nullptr) {
+			switch (window->rendererType) {
+			case RendererType::RendererType_Vulkan:
+				window->renderer.vulkan->Present();
+				break;
+			}
+		}
 }
 
 
@@ -209,6 +218,8 @@ void Module_Window::HandleFocusChange(Window *window, bool hasFocus)
 
 void Module_Window::HandleFramebufferSizeChange(Window *window, int x, int y)
 {
+	window->framebufferSize.x = x;
+	window->framebufferSize.y = y;
 }
 
 void Module_Window::HandleIconifyChange(Window *window, bool isIconified)

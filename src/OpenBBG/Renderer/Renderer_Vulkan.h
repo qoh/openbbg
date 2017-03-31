@@ -1,5 +1,8 @@
 #pragma once
 
+// OpenBBG
+#include <OpenBBG/Renderer/Utility_Vulkan.h>
+
 namespace openbbg {
 
 typedef struct Window Window;
@@ -9,9 +12,21 @@ struct Renderer_Vulkan
 {
 	Window *window;
 
+	bool initialized;
+
 	Renderer_Vulkan(Window *window);
 
 	~Renderer_Vulkan();
+
+	void Init();
+
+	void Present();
+
+	void Destroy();
+
+	struct sample_info info;
+
+	vk::GlobalInstance global;
 };
 
 }

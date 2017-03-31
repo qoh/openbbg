@@ -46,3 +46,9 @@
 			Renderer/
 				Renderer_Vulkan.cpp
 				Renderer_Vulkan.h
+				Utility_Vulkan.h
+				Vulkan_CommandPool.h
+				Vulkan_GlobalInstance.h
+				Vulkan_Pipeline.h
+				Vulkan_RenderNode.h
+				Vulkan_ShaderUtility.h
