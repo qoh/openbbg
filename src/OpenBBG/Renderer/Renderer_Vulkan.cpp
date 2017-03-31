@@ -8,6 +8,8 @@
 
 // REF: https://vulkan.lunarg.com/doc/sdk/1.0.42.1/windows/tutorial/html/index.html
 
+// TODO: Figure out a way to instantly present to window without waiting for the first frame to queue
+
 namespace openbbg {
 
 deque<vk::GraphicsPipeline *> vk::GraphicsPipeline::s_pipelines;
@@ -167,7 +169,8 @@ static const VertexUV g_vb_texture_Data[] = {
 
 Renderer_Vulkan::Renderer_Vulkan(Window *window)
 	: window(window)
-	, initialized(false)
+	, isInitialized(false)
+	, isFirstFrame(true)
 {
 	info = {};
 	Init();
@@ -183,7 +186,7 @@ VkFence drawFence;
 vk::GraphicsPipeline *graphicsPipeline = nullptr;
 void Renderer_Vulkan::Init()
 {
-	if (initialized)
+	if (isInitialized)
 		return;
 
 	const char *appName = "opennbg";
@@ -398,7 +401,9 @@ void Renderer_Vulkan::Init()
 	fenceInfo.pNext = NULL;
 	fenceInfo.flags = 0;
 	vkCreateFence(global.device, &fenceInfo, NULL, &drawFence);
-	initialized = true;
+
+	isInitialized = true;
+	isFirstFrame = true;
 }
 
 void Renderer_Vulkan::Present()
@@ -466,7 +471,7 @@ void Renderer_Vulkan::Present()
 	}
 
 	// Queue commands
-	{
+//	{
 		const VkCommandBuffer cmd_bufs[] = {global.primaryCommandPool.currentBuffer};
 #if 0
 		VkFenceCreateInfo fenceInfo;
@@ -520,14 +525,20 @@ void Renderer_Vulkan::Present()
 		vkDestroySemaphore(global.device, imageAcquiredSemaphore, NULL);
 		vkDestroyFence(global.device, drawFence, NULL);
 #endif
-	}
+//	}
 
 	global.primaryCommandPool.UpdateCurrentBuffer();
+
+	// Show window after first frame is queued
+	if (isFirstFrame && glfwGetWindowAttrib(window->glfwWindow, GLFW_VISIBLE) == GLFW_FALSE) {
+		glfwShowWindow(window->glfwWindow);
+		isFirstFrame = false;
+	}
 }
 
 void Renderer_Vulkan::Destroy()
 {
-	if (initialized == false)
+	if (isInitialized == false)
 		return;
 
 	vkDestroySemaphore(global.device, imageAcquiredSemaphore, NULL);
@@ -552,6 +563,8 @@ void Renderer_Vulkan::Destroy()
 
 	// Cleanpu global instance
 	global.Cleanup();
+
+	isInitialized = false;
 }
 
 }

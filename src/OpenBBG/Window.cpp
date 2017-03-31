@@ -12,6 +12,7 @@ Window *Window::CreateVulkanWindow(int width, int height, const char *title)
 	window->rendererType = RendererType_Vulkan;
 	
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 	window->glfwWindow = glfwCreateWindow(width, height, title, nullptr, nullptr);
 	glfwSetWindowUserPointer(window->glfwWindow, window);
 

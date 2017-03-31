@@ -154,9 +154,10 @@ bool Module_Window::ShouldClose()
 void Module_Window::ProcessEvents()
 {
 	glfwPollEvents();
+
 	// TEMP
 	for (auto window : s_moduleInstance->windows)
-		if (window->renderer.ptr != nullptr) {
+		if (window->renderer.ptr != nullptr && glfwGetWindowAttrib(window->glfwWindow, GLFW_ICONIFIED) == GLFW_FALSE) {
 			switch (window->rendererType) {
 			case RendererType::RendererType_Vulkan:
 				window->renderer.vulkan->Present();

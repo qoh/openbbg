@@ -12,7 +12,9 @@ struct Renderer_Vulkan
 {
 	Window *window;
 
-	bool initialized;
+	bool isInitialized;
+
+	bool isFirstFrame;
 
 	Renderer_Vulkan(Window *window);
 
