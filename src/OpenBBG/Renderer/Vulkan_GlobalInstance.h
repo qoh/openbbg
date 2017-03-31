@@ -46,10 +46,14 @@ struct GlobalInstance
 
     VkPipelineCache pipelineCache;
 
+	VkSurfaceCapabilitiesKHR surfaceCapabilities;
+	VkSwapchainCreateInfoKHR swapchainCreateInfo;
+
 	GlobalInstance()
 		: isInitialized { false }
 		, primaryCommandPool { device, qfiGraphics }
 		, renderNode { nullptr }
+		, swapchainCreateInfo {}
 	{
 	}
 
@@ -244,7 +248,6 @@ struct GlobalInstance
 	inline bool CreateSwapChain(VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
 	{
 		VkResult res;
-		VkSurfaceCapabilitiesKHR surfaceCapabilities;
 
 		res = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevices[0], surface, &surfaceCapabilities);
 		assert(res == VK_SUCCESS);
@@ -278,7 +281,6 @@ struct GlobalInstance
 		}
 		
 		uint32_t queueFamilyIndices[2] = { qfiGraphics, qfiPresent };
-		VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
 		swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		swapchainCreateInfo.pNext = nullptr;
 		swapchainCreateInfo.surface = surface;
@@ -290,6 +292,8 @@ struct GlobalInstance
 		swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		swapchainCreateInfo.imageArrayLayers = 1;
 		swapchainCreateInfo.presentMode = swapchainPresentMode;
+		swapchainCreateInfo.imageExtent.width = swapchainExtent.width;
+		swapchainCreateInfo.imageExtent.height = swapchainExtent.height;
 		swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 		swapchainCreateInfo.clipped = true;
 		swapchainCreateInfo.imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
@@ -304,43 +308,14 @@ struct GlobalInstance
 			swapchainCreateInfo.pQueueFamilyIndices = nullptr;
 		}
 
+		swapchainCreateInfo.imageExtent.width = swapchainExtent.width;
+		swapchainCreateInfo.imageExtent.height = swapchainExtent.height;
+		swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 		res = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain);
 		assert(res == VK_SUCCESS);
 
 		res = vkGetSwapchainImagesKHR(device, swapchain, &numSwapchainImages, nullptr);
 		assert(res == VK_SUCCESS);
-
-/*		std::vector<VkImage> swapchainImages(numSwapchainImages);
-		res = vkGetSwapchainImagesKHR(device, swapchain, &numSwapchainImages, swapchainImages.data());
-		assert(res == VK_SUCCESS);
-
-		for (uint32_t a = 0; a < numSwapchainImages; ++a) {
-			SwapchainBuffer buffer;
-
-			VkImageViewCreateInfo color_image_view = {};
-			color_image_view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			color_image_view.pNext = nullptr;
-			color_image_view.format = surfaceFormat;
-			color_image_view.components.r = VK_COMPONENT_SWIZZLE_R;
-			color_image_view.components.g = VK_COMPONENT_SWIZZLE_G;
-			color_image_view.components.b = VK_COMPONENT_SWIZZLE_B;
-			color_image_view.components.a = VK_COMPONENT_SWIZZLE_A;
-			color_image_view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			color_image_view.subresourceRange.baseMipLevel = 0;
-			color_image_view.subresourceRange.levelCount = 1;
-			color_image_view.subresourceRange.baseArrayLayer = 0;
-			color_image_view.subresourceRange.layerCount = 1;
-			color_image_view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			color_image_view.flags = 0;
-
-			buffer.image = swapchainImages[a];
-
-			color_image_view.image = buffer.image;
-
-			res = vkCreateImageView(device, &color_image_view, nullptr, &buffer.view);
-			swapchainBuffers.push_back(buffer);
-			assert(res == VK_SUCCESS);
-		}*/
 
 		currentSwapchainBufferIdx = 0;
 
@@ -362,6 +337,15 @@ struct GlobalInstance
 
 		return true;
 	}
+
+
+	//------------------------------------------------------------------------------
+	
+	inline bool DestroySwapChain()
+	{
+		vkDestroySwapchainKHR(device, swapchain, nullptr);
+	}
+
 
 	//------------------------------------------------------------------------------
 
@@ -560,8 +544,7 @@ struct GlobalInstance
 		
 		vkDestroyPipelineCache(device, pipelineCache, nullptr);
 
-
-		vkDestroySwapchainKHR(device, swapchain, nullptr);
+		DestroySwapChain();
 		
 		primaryCommandPool.Cleanup();
 

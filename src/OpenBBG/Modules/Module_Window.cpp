@@ -163,7 +163,7 @@ void Module_Window::ProcessEvents()
 			switch (window->rendererType) {
 #if OPENBBG_WITH_VULKAN
 			case RendererType::RendererType_Vulkan:
-				window->renderer.vulkan->Present();
+				window->renderer.vulkan->Render();
 				break;
 #endif
 			case RendererType::RendererType_None:
@@ -226,8 +226,20 @@ void Module_Window::HandleFocusChange(Window *window, bool hasFocus)
 
 void Module_Window::HandleFramebufferSizeChange(Window *window, int x, int y)
 {
-	window->framebufferSize.x = x;
-	window->framebufferSize.y = y;
+	Game::Get()->jobsFrameStart.Queue([window, x, y]() {
+		switch (window->rendererType) {
+#if OPENBBG_WITH_VULKAN
+			case RendererType::RendererType_Vulkan:
+				window->renderer.vulkan->ResizeFramebuffer(x, y);
+				break;
+#endif
+			case RendererType::RendererType_None:
+			default:
+				break;
+		}
+		window->framebufferSize.x = x;
+		window->framebufferSize.y = y;
+	});
 }
 
 void Module_Window::HandleIconifyChange(Window *window, bool isIconified)

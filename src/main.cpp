@@ -50,7 +50,7 @@ int entryFunc(int argc, char *argv[])
 	double startTime = glfwGetTime();
 	
 #if 0
-	JobPool testPool(&game, false);
+	JobPool testPool(game.isRunning, false);
 
 	for (uint32_t a = 0; a < 3000; ++a)
 	testPool.Queue([&testPool, asdf, b]() {
@@ -70,7 +70,7 @@ int entryFunc(int argc, char *argv[])
 	testPool.ProcessAllCurrent();
 #else
 	unsigned concurentThreadsSupported = std::thread::hardware_concurrency();
-	JobPool testPool(true, game.isRunning, concurentThreadsSupported == 0 ? 8 : concurentThreadsSupported);
+	JobPool testPool(game.isRunning, true, concurentThreadsSupported == 0 ? 8 : concurentThreadsSupported);
 
 	for (uint32_t a = 0; a < 3000; ++a)
 	testPool.Queue([&testPool, asdf, b]() {

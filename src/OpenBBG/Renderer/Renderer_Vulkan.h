@@ -2,6 +2,7 @@
 
 // OpenBBG
 #include <OpenBBG/Renderer/Utility_Vulkan.h>
+#include <OpenBBG/Job.h>
 
 namespace openbbg {
 
@@ -22,9 +23,11 @@ struct Renderer_Vulkan
 
 	void Init();
 
-	void Present();
+	void Render();
 
 	void Destroy();
+
+	void ResizeFramebuffer(int x, int y);
 
 	struct sample_info info;
 

@@ -17,9 +17,9 @@ struct JobPool
 	vector<std::thread> threads;
 	volatile bool &keepAlive;
 
-	JobPool(bool isAsync, volatile bool &keepAlive, uint16_t numThreads = 1)
-		: isAsync(isAsync)
-		, keepAlive(keepAlive)
+	JobPool(volatile bool &keepAlive, bool isAsync, uint16_t numThreads = 1)
+		: keepAlive(keepAlive)
+		, isAsync(isAsync)
 	{
 		if (isAsync) {
 			threads.reserve(numThreads);
@@ -35,7 +35,9 @@ struct JobPool
 			for (auto &t : threads)
 				t.join();
 			threads.clear();
-		}
+		} else
+			while (jobs.empty() == false)
+				ProcessAllCurrent();
 	}
 
 	inline void Queue(function<void()> job)
@@ -52,6 +54,7 @@ struct JobPool
 		{
 			std::lock_guard<std::mutex> lk(m);
 			jobList = jobs;
+			jobs.clear();
 		}
 		for (auto &job : jobList)
 			job();

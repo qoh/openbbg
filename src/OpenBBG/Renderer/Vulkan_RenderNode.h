@@ -308,26 +308,39 @@ struct RenderNode
 		return true;
 	}
 
+	inline void DestroyFramebuffers(VkDevice &device)
+	{
+		for (uint32_t a = 0; a < numFramebuffers; ++a)
+			vkDestroyFramebuffer(device, framebuffers[a], nullptr);
+	}
+
+	inline void DestroySwapchainViews(VkDevice &device)
+	{
+		for (uint32_t a = 0; a < numFramebuffers; ++a)
+			vkDestroyImageView(device, primaryImagePairs[a].view, nullptr);
+	}
+
+	inline void DestroyImagesAndViews(VkDevice &device)
+	{
+		uint32_t start = hasPresent ? 1 : 0;
+		for (uint32_t a = start; a < numAttachments; ++a) {
+			auto &ivPair = imagePairs[a];
+			vkDestroyImageView(device, ivPair.view, nullptr);
+			vkDestroyImage(device, ivPair.image, nullptr);
+			vkFreeMemory(device, ivPair.mem, nullptr);
+		}
+	}
+
 	inline void Cleanup(VkDevice &device)
 	{
 		if (hasRenderPass == false)
 			return;
 
-		{
-			uint32_t start = hasPresent ? 1 : 0;
-			for (uint32_t a = start; a < numAttachments; ++a) {
-				auto &ivPair = imagePairs[a];
-				vkDestroyImageView(device, ivPair.view, nullptr);
-				vkDestroyImage(device, ivPair.image, nullptr);
-				vkFreeMemory(device, ivPair.mem, nullptr);
-			}
-		}
+		DestroyFramebuffers(device);
 
-		for (uint32_t a = 0; a < numFramebuffers; ++a)
-			vkDestroyImageView(device, primaryImagePairs[a].view, nullptr);
+		DestroyImagesAndViews(device);
 
-		for (uint32_t a = 0; a < numFramebuffers; ++a)
-			vkDestroyFramebuffer(device, framebuffers[a], nullptr);
+		DestroySwapchainViews(device);
 
 		vkDestroyRenderPass(device, renderPass, nullptr);
 

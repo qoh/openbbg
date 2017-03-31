@@ -4,6 +4,7 @@
 // OpenBBG
 #include <OpenBBG/Renderer/Renderer_Vulkan.h>
 #include <OpenBBG/Renderer/Utility_Vulkan.h>
+#include <OpenBBG/Game.h>
 #include <OpenBBG/Window.h>
 #include <OpenBBG/Log.h>
 
@@ -407,12 +408,39 @@ void Renderer_Vulkan::Init()
 	isFirstFrame = true;
 }
 
-void Renderer_Vulkan::Present()
+void Renderer_Vulkan::ResizeFramebuffer(int x, int y)
+{
+	if (global.width == x && global.height == y)
+		return;
+	global.width = x;
+	global.height = y;
+	global.renderNode->DestroyFramebuffers(global.device);
+	global.renderNode->DestroyImagesAndViews(global.device);
+	global.renderNode->DestroySwapchainViews(global.device);
+	global.renderNode->SetResolution(x, y);
+	global.DestroySwapChain();
+	global.CreateSwapChain();
+	global.renderNode->CreateSwapchainViews(global.device, global.swapchain);
+	global.renderNode->CreateImagesAndViews(global.device, global.physicalDevices[0], global.deviceMemoryProperties);
+	global.renderNode->CreateFramebuffers(global.device);
+
+	// Uniform Buffer
+	vkDestroyBuffer(global.device, info.uniform_data.buf, NULL);
+	vkFreeMemory(global.device, info.uniform_data.mem, NULL);
+	vkFreeDescriptorSets(global.device, info.desc_pool, (uint32_t)info.desc_set.size(), info.desc_set.data());
+	init_uniform_buffer(global, info);
+	init_descriptor_set(global, info, graphicsPipeline, false);
+}
+
+void Renderer_Vulkan::Render()
 {
 	VkResult res;
 
 	// Build Command Buffer
 	global.primaryCommandPool.BeginCurrentBuffer();
+
+	Game::Get()->jobsFrameStart.ProcessAllCurrent();
+
 	{
 		VkClearValue clear_values[2];
 		clear_values[0].color.float32[0] = fmod((float)glfwGetTime(), 1.f);
@@ -468,11 +496,14 @@ void Renderer_Vulkan::Present()
 		vkCmdDraw(global.primaryCommandPool.currentBuffer, 12 * 3, 1, 0, 0);
 		vkCmdEndRenderPass(global.primaryCommandPool.currentBuffer);
 
-		global.primaryCommandPool.EndCurrentBuffer();
 	}
 
+	Game::Get()->jobsFrameEnd.ProcessAllCurrent();
+
+	global.primaryCommandPool.EndCurrentBuffer();
+
 	// Queue commands
-//	{
+	{
 		const VkCommandBuffer cmd_bufs[] = {global.primaryCommandPool.currentBuffer};
 #if 0
 		VkFenceCreateInfo fenceInfo;
@@ -511,10 +542,9 @@ void Renderer_Vulkan::Present()
 		present.waitSemaphoreCount = 0;
 		present.pResults = NULL;
 
-		/* Make sure command buffer is finished before presenting */
-//		do {
-//			res = vkWaitForFences(global.device, 1, &drawFence, VK_TRUE, FENCE_TIMEOUT);
-//		} while (res == VK_TIMEOUT);
+		do {
+			res = vkWaitForFences(global.device, 1, &drawFence, VK_TRUE, FENCE_TIMEOUT);
+		} while (res == VK_TIMEOUT);
 
 		assert(res == VK_SUCCESS);
 		res = vkQueuePresentKHR(global.presentQueue, &present);
@@ -526,7 +556,7 @@ void Renderer_Vulkan::Present()
 		vkDestroySemaphore(global.device, imageAcquiredSemaphore, NULL);
 		vkDestroyFence(global.device, drawFence, NULL);
 #endif
-//	}
+	}
 
 	global.primaryCommandPool.UpdateCurrentBuffer();
 
@@ -548,16 +578,18 @@ void Renderer_Vulkan::Destroy()
 	delete graphicsPipeline;
 	graphicsPipeline = nullptr;
 
+	vkFreeDescriptorSets(global.device, info.desc_pool, (uint32_t)info.desc_set.size(), info.desc_set.data());
+
 	// Descriptor Pool
 	vkDestroyDescriptorPool(global.device, info.desc_pool, NULL);
 
 	// Vertex Buffer
-    vkDestroyBuffer(global.device, info.vertex_buffer.buf, NULL);
-    vkFreeMemory(global.device, info.vertex_buffer.mem, NULL);
+	vkDestroyBuffer(global.device, info.vertex_buffer.buf, NULL);
+	vkFreeMemory(global.device, info.vertex_buffer.mem, NULL);
 
 	// Uniform Buffer
-    vkDestroyBuffer(global.device, info.uniform_data.buf, NULL);
-    vkFreeMemory(global.device, info.uniform_data.mem, NULL);
+	vkDestroyBuffer(global.device, info.uniform_data.buf, NULL);
+	vkFreeMemory(global.device, info.uniform_data.mem, NULL);
 
 
 	//----------------------
