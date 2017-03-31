@@ -3,6 +3,7 @@
 // OpenBBG
 #include <OpenBBG/Modules/Module_UI.h>
 #include <OpenBBG/Game.h>
+#include <OpenBBG/UI/UI_Control.h>
 
 namespace openbbg {
 

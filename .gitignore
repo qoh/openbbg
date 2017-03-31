@@ -1,11 +1,16 @@
-build
-external/build
+build/
+external/build/
 external/cmake/cmakepp.cmake
-bin
+bin/
 console.log
 src/OpenBBG/InternalConfig.h
 
 
+*.TMP
+
 
 # VIM
 *.sw*
+
+# Doxygen
+docs/
