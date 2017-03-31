@@ -41,6 +41,8 @@
 				Module_Game.h
 				Module_Lua.cpp
 				Module_Lua.h
+				Module_UI.cpp
+				Module_UI.h
 				Module_Window.cpp
 				Module_Window.h
 			Renderer/
@@ -52,3 +54,17 @@
 				Vulkan_Pipeline.h
 				Vulkan_RenderNode.h
 				Vulkan_ShaderUtility.h
+			UI/
+				UI_Class.cpp
+				UI_Class.h
+				UI_Component.cpp
+				UI_Component.h
+				UI_Context.cpp
+				UI_Context.h
+				UI_Control.cpp
+				UI_Control.h
+				UI_Profile.cpp
+				UI_Profile.h
+				UI_Profile.cpp
+				UI_Zone.cpp
+				UI_Zone.h

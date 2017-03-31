@@ -118,6 +118,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 IMPLEMENT_MODULE(Module_Window, Phase_Startup, true)
 MODULE_DEPENDENCY(Module_Window, Module_Game, true)
+MODULE_DEPENDENCY(Module_Window, Module_UI, true)
 
 bool Module_Window::ModuleInit(Game *game)
 {
