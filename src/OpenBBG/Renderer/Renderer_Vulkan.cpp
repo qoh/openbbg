@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#if OPENBBG_WITH_VULKAN
 
 // OpenBBG
 #include <OpenBBG/Renderer/Renderer_Vulkan.h>
@@ -568,3 +569,4 @@ void Renderer_Vulkan::Destroy()
 }
 
 }
+#endif

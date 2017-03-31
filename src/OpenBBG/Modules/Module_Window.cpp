@@ -125,7 +125,9 @@ bool Module_Window::ModuleInit(Game *game)
 	SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
 #endif
 
+#if OPENBBG_WITH_VULKAN
 	windows.push_back(Window::CreateVulkanWindow(640, 480, "Test Window"));
+#endif
 
 	return true;
 }
@@ -159,8 +161,13 @@ void Module_Window::ProcessEvents()
 	for (auto window : s_moduleInstance->windows)
 		if (window->renderer.ptr != nullptr && glfwGetWindowAttrib(window->glfwWindow, GLFW_ICONIFIED) == GLFW_FALSE) {
 			switch (window->rendererType) {
+#if OPENBBG_WITH_VULKAN
 			case RendererType::RendererType_Vulkan:
 				window->renderer.vulkan->Present();
+				break;
+#endif
+			case RendererType::RendererType_None:
+			default:
 				break;
 			}
 		}

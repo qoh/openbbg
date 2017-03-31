@@ -1,7 +1,10 @@
 #pragma once
 
 // OpenBBG
+#include <OpenBBG/InternalConfig.h>
+#if OPENBBG_WITH_VULKAN
 #include <OpenBBG/Renderer/Renderer_Vulkan.h>
+#endif
 
 // GLFW
 #if OPENBBG_WITH_VULKAN
@@ -21,12 +24,16 @@ namespace openbbg {
 typedef struct Window Window;
 
 typedef enum RendererType {
-	RendererType_None,
-	RendererType_Vulkan
+	  RendererType_None
+#if OPENBBG_WITH_VULKAN
+	, RendererType_Vulkan
+#endif
 } RendererType;
 
 typedef union Renderer {
+#if OPENBBG_WITH_VULKAN
 	Renderer_Vulkan *vulkan;
+#endif
 	void *ptr;
 } Renderer;
 
@@ -40,7 +47,9 @@ struct Window
 
 	glm::ivec2 framebufferSize;
 
+#if OPENBBG_WITH_VULKAN
 	static Window *CreateVulkanWindow(int width, int height, const char *title);
+#endif
 
 	Window();
 

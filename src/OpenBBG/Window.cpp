@@ -6,6 +6,7 @@
 
 namespace openbbg {
 
+#if OPENBBG_WITH_VULKAN
 Window *Window::CreateVulkanWindow(int width, int height, const char *title)
 {
 	Window *window = new Window();
@@ -23,6 +24,7 @@ Window *Window::CreateVulkanWindow(int width, int height, const char *title)
 
 	return window;
 }
+#endif
 
 Window::Window()
 	: glfwWindow(nullptr)
@@ -34,8 +36,10 @@ Window::Window()
 Window::~Window()
 {
 	switch (rendererType) {
+#if OPENBBG_WITH_VULKAN
 	case RendererType_Vulkan:
 		delete renderer.vulkan;
+#endif
 		break;
 	}
 	glfwDestroyWindow(glfwWindow);
