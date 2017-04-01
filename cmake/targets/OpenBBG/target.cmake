@@ -13,8 +13,19 @@ if(WITH_VULKAN)
 	endif()
 endif()
 
+# Awesomium
+if(WITH_AWESOMIUM)
+	find_package(Awesomium)
+	if(AWESOMIUM_FOUND)
+		list(APPEND INCLUDE ${AWESOMIUM_INCLUDE_DIRS})
+		list(APPEND LIB ${AWESOMIUM_LIBRARIES})
+	endif()
+endif()
+
+
 # Config
 set(OPENBBG_WITH_VULKAN ${WITH_VULKAN})
+set(OPENBBG_WITH_AWESOMIUM ${WITH_AWESOMIUM})
 configure_file("${pathBase}/src/OpenBBG/InternalConfig.h.in" "${pathBase}/src/OpenBBG/InternalConfig.h")
 
 _ParseTargetFileTreeIfChanged(${TARGET} ${fileSources} ${fileTarget} ${pathBase} 1)

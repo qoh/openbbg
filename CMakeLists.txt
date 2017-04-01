@@ -7,6 +7,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # Options
 
 option(WITH_VULKAN "" OFF)
+option(WITH_AWESOMIUM "" OFF)
 
 
 # Paths
