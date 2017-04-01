@@ -266,10 +266,13 @@ struct GlobalInstance
 			swapchainExtent.height = std::min(std::max((uint32_t)height, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
 		} else
 			swapchainExtent = surfaceCapabilities.currentExtent;
-
-	//	VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
-	//	VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+		
+#if OPENBBG_VULKAN_VSYNC
 		VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+#else
+		VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+#endif
+	//	VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
 
 		uint32_t desiredNumberOfSwapchainImages = surfaceCapabilities.minImageCount;
 

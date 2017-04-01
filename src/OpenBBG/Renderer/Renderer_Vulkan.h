@@ -1,8 +1,11 @@
 #pragma once
 
+#define OPENBBG_VULKAN_VSYNC 0
+
 // OpenBBG
 #include <OpenBBG/Renderer/Utility_Vulkan.h>
 #include <OpenBBG/Job.h>
+#include <OpenBBG/Utility/Timing.h>
 
 namespace openbbg {
 
@@ -16,6 +19,15 @@ struct Renderer_Vulkan
 	bool isInitialized;
 
 	bool isFirstFrame;
+	
+	// TEMP - Frame Time Logging (No VSync)
+#if !OPENBBG_VULKAN_VSYNC
+	TimeValue frameStart;
+	TimeValue frameQueue;
+	TimeValue frameEnd;
+	AverageLog frameCPULog;
+	AverageLog frameGPULog;
+#endif
 
 	Renderer_Vulkan(Window *window);
 

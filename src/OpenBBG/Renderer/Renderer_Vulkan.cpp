@@ -170,9 +170,13 @@ static const VertexUV g_vb_texture_Data[] = {
 //-----------------------------------------------
 
 Renderer_Vulkan::Renderer_Vulkan(Window *window)
-	: window(window)
-	, isInitialized(false)
-	, isFirstFrame(true)
+	: window { window }
+	, isInitialized { false }
+	, isFirstFrame { true }
+#if !OPENBBG_VULKAN_VSYNC
+	, frameCPULog { 8192 }
+	, frameGPULog { 8192 }
+#endif
 {
 	info = {};
 	Init();
@@ -434,6 +438,19 @@ void Renderer_Vulkan::ResizeFramebuffer(int x, int y)
 
 void Renderer_Vulkan::Render()
 {
+	// TEMP - Frame Time Logging (No VSync)
+#if !OPENBBG_VULKAN_VSYNC
+	if (isFirstFrame == false) {
+		GetTime(frameEnd);
+		frameCPULog.Push(GetTimeDurationMS(frameStart, frameQueue));
+		if (frameGPULog.Push(GetTimeDurationMS(frameQueue, frameEnd))) {
+			float frameTime = frameCPULog.average + frameGPULog.average;
+			LOG_DEBUG("|  fps: {:12.3f}  |  mspf: {:6.3f}  |  cpu: {:6.3f}  |  gpu: {:6.3f}  |", 1000.f / frameTime, frameTime, frameCPULog.average, frameGPULog.average);
+		}
+	}
+	GetTime(frameStart);
+#endif
+
 	VkResult res;
 
 	// Build Command Buffer
@@ -525,6 +542,11 @@ void Renderer_Vulkan::Render()
 		submit_info[0].pCommandBuffers = cmd_bufs;
 		submit_info[0].signalSemaphoreCount = 0;
 		submit_info[0].pSignalSemaphores = NULL;
+		
+		// TEMP - Frame Time Logging (No VSync)
+#if !OPENBBG_VULKAN_VSYNC
+		GetTime(frameQueue);
+#endif
 
 		/* Queue the command buffer for execution */
 		res = vkQueueSubmit(global.graphicsQueues[0], 1, submit_info, drawFence);
