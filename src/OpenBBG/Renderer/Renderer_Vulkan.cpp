@@ -174,8 +174,8 @@ Renderer_Vulkan::Renderer_Vulkan(Window *window)
 	, isInitialized { false }
 	, isFirstFrame { true }
 #if !OPENBBG_VULKAN_VSYNC
-	, frameCPULog { 8192 }
-	, frameGPULog { 8192 }
+	, frameCPULog { 1000.f }
+	, frameGPULog { 1000.f }
 #endif
 {
 	info = {};

@@ -17,6 +17,41 @@ inline float GetTimeDurationMS(TimeValue &begin, TimeValue &end)
 
 typedef struct AverageLog AverageLog;
 
+#if 1
+// Time based average log
+struct AverageLog
+{
+	std::vector<float> log;
+
+	float trackLength;
+
+	float total;
+
+	float average;
+
+	AverageLog(float trackLength)
+		: trackLength { trackLength }
+		, total { 0.f }
+		, average { 0.f }
+	{
+		log.reserve(256);
+	}
+
+	inline bool Push(float in)
+	{
+		log.push_back(in);
+		total += in;
+		if (total >= trackLength) {
+			average = total / (float)log.size();
+			log.clear();
+			total = 0.f;
+			return true;
+		}
+		return false;
+	}
+};
+#else
+// Fixed length average log
 struct AverageLog
 {
 	std::vector<float> log;
@@ -54,5 +89,6 @@ struct AverageLog
 		return false;
 	}
 };
+#endif
 
 }
