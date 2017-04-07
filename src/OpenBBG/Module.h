@@ -13,7 +13,8 @@ typedef struct DependencyRelationship DependencyRelationship;
 
 #define DECLARE_MODULE(ModuleClass) \
 	static Module::ModuleDef *s_moduleDefinition; \
-	static ModuleClass *s_moduleInstance;
+	static ModuleClass *s_moduleInstance; \
+	static inline ModuleClass *Get() { return s_moduleInstance; }
 
 #define IMPLEMENT_MODULE(ModuleClass, Phase, IsEnabled) \
 	ModuleClass *ModuleClass::s_moduleInstance = new ModuleClass(); \

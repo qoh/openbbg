@@ -3,6 +3,7 @@
 		scripts/
 			sandbox.lua
 			test.lua
+			ui-test.lua
 	cmake/
 		Macros.cmake
 		Targets.cmake
@@ -61,8 +62,10 @@
 				UI_Component.h
 				UI_Context.cpp
 				UI_Context.h
+				UI_Context_def.h
 				UI_Control.cpp
 				UI_Control.h
+				UI_Control_def.h
 				UI_Profile.cpp
 				UI_Profile.h
 				UI_Profile.cpp

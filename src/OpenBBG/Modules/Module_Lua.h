@@ -3,6 +3,8 @@
 // OpenBBG
 #include <OpenBBG/Module.h>
 
+#define LUA_BINDING_API __declspec(dllexport)
+
 namespace openbbg {
 	
 typedef struct Module_Lua Module_Lua;

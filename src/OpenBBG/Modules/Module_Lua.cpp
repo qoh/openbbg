@@ -3,12 +3,16 @@
 // OpenBBG
 #include <OpenBBG/Modules/Module_Lua.h>
 #include <OpenBBG/Game.h>
+#include <OpenBBG/Log.h>
 
 // Standard Library
 #include <iostream>
 
 // LuaJIT
 #include <lua.hpp>
+#define lib_init_c
+#define LUA_LIB
+#include <lj_arch.h>
 
 #define DO_SANDBOX 1
 
@@ -54,23 +58,6 @@ LUALIB_API void luaL_openlibs_custom(lua_State *L)
   lua_pop(L, 1);
 }
 
-static int loader_Custom(lua_State *L)
-{
-/*  size_t size;
-  const char *name = luaL_checkstring(L, 1);
-  const char *content = GetContents(name, &size);
-  if(content) {
-    lua_pushfstring("@%s", name);
-    if(luaL_loadbuffer(L, content, size, lua_tostring(L, -1)) != 0)
-      luaL_error(L, "error loading module " LUA_QS ":\n\t%s", name,
-lua_tostring(L, -1));
-  } else {
-    lua_pushfstring("\n\tno file " LUA_QS, name);
-  }
-*/  return 1;
-}
-
-
 
 //---------------------------------------------------------------------------------------
 
@@ -85,10 +72,6 @@ bool Module_Lua::ModuleInit(Game *game)
 {
 	g_luaState = luaL_newstate();
 	luaL_openlibs_custom(g_luaState);
-
-	luaL_loadstring(g_luaState, "table.insert(package.loaders, 3, ...)");
-	lua_pushcfunction(g_luaState, loader_Custom);
-	lua_call(g_luaState, 1, 0);
 
 	// Execute scripts
 #if DO_SANDBOX
@@ -108,8 +91,38 @@ void Module_Lua::ModuleCleanup(Game *game)
 void Module_Lua::ExecuteScript(const char *file)
 {
 	if (luaL_loadfile(g_luaState, file) || lua_pcall(g_luaState, 0, LUA_MULTRET, 0)) {
-		std::cerr << "Couldn't load file " << file << " : " << lua_tostring(g_luaState, -1) << std::endl;
+		LOG_ERROR("Couldn't load file {} : {}", file, lua_tostring(g_luaState, -1));
 	}
 }
 
+}
+
+using namespace openbbg;
+
+extern "C" LUA_BINDING_API
+void
+LogDebug(const char *msg)
+{
+	LOG_DEBUG(msg);
+}
+
+extern "C" LUA_BINDING_API
+void
+LogError(const char *msg)
+{
+	LOG_ERROR(msg);
+}
+
+extern "C" LUA_BINDING_API
+void
+LogInfo(const char *msg)
+{
+	LOG_INFO(msg);
+}
+
+extern "C" LUA_BINDING_API
+void
+LogWa1rn(const char *msg)
+{
+	LOG_WARN(msg);
 }
