@@ -7,6 +7,7 @@
 #include <OpenBBG/Game.h>
 #include <OpenBBG/Window.h>
 #include <OpenBBG/Log.h>
+#include <OpenBBG/Renderer/RenderNode.h>
 
 // REF: https://vulkan.lunarg.com/doc/sdk/1.0.42.1/windows/tutorial/html/index.html
 
@@ -195,8 +196,7 @@ void Renderer_Vulkan::Init()
 	if (isInitialized)
 		return;
 
-	const char *appName = "opennbg";
-    const bool depthPresent = true;
+	const char *appName = "openbbg";
 
 	// Init global instance
 	global.width = window->framebufferSize.x;

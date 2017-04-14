@@ -122,7 +122,7 @@ LogInfo(const char *msg)
 
 extern "C" LUA_BINDING_API
 void
-LogWa1rn(const char *msg)
+LogWarn(const char *msg)
 {
 	LOG_WARN(msg);
 }

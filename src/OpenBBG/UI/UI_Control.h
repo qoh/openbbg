@@ -1,6 +1,9 @@
 #ifndef _OPENBBG__UI__UI_CONTROL_H_
 #define _OPENBBG__UI__UI_CONTROL_H_
 
+// OpenBBG
+#include <OpenBBG/Common/TreeNode.h>
+
 namespace openbbg {
 
 typedef struct UI_Context UI_Context;
@@ -25,7 +28,7 @@ struct UI_ScissorRule
 	glm::vec4 scissorPadding;
 };
 
-struct UI_Control
+struct UI_Control : TreeNode<UI_Control>
 {
 	UI_Control();
 
@@ -62,58 +65,11 @@ struct UI_Control
 
 	//------------------------ Family -------------------------
 	
-	/**
-	 * Container of child controls
-	 */
-	deque<UI_Control *> children;
-
-	/**
-	 * Parent control
-	 */
-	UI_Control *parent { nullptr };
-
-	/**
-	 * Check if control is a child
-	 * @param ctrl Target control
-	 * @return true if target control is a child, otherwise false
-	 */
-	bool IsChild(UI_Control *ctrl);
-
-	/**
-	 * Remove control from children
-	 * @param ctrl Target control
-	 */
-	void RemoveChild(UI_Control *ctrl);
-
-	/**
-	 * Add control to children
-	 * @param ctrl Target control
-	 */
-	void AddChild(UI_Control *ctrl);
-
-	/**
-	 * Move control to the front of the children
-	 * @param ctrl Target control
-	 */
-	void MoveToFront(UI_Control *ctrl);
+	void OnChildAdded(UI_Control *child);
 	
-	/**
-	 * Move control to the back of the children
-	 * @param ctrl Target control
-	 */
-	void MoveToBack(UI_Control *ctrl);
+	void OnChildRemoved(UI_Control *child);
 	
-	/**
-	 * Swap control with its forward neighbor
-	 * @param ctrl Target control
-	 */
-	void MoveForward(UI_Control *ctrl);
-	
-	/**
-	 * Swap control with its backward neighbor
-	 * @param ctrl Target control
-	 */
-	void MoveBackward(UI_Control *ctrl);
+	void OnChildrenChanged();
 
 
 	//------------------------ Rules ---------------------------

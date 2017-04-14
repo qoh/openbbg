@@ -33,6 +33,11 @@
 			Module.h
 			Window.cpp
 			Window.h
+			Common/
+				TreeNode.h
+				TreeNode_def.h
+				DirectedAcyclicGraphNode.h
+				DirectedAcyclicGraphNode_def.h
 			External/
 				EASTL.cpp
 			Modules/
@@ -47,6 +52,12 @@
 				Module_Window.cpp
 				Module_Window.h
 			Renderer/
+				RenderGraph.cpp
+				RenderGraph.h
+				RenderGraph_def.h
+				RenderNode.cpp
+				RenderNode.h
+				RenderNode_def.h
 				Renderer_Vulkan.cpp
 				Renderer_Vulkan.h
 				Utility_Vulkan.h

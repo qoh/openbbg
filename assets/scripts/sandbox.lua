@@ -24,7 +24,7 @@ warn = function(fmt, ...)
 
 ---------------------------------------------------------
 
---[[
+
 ffi.cdef[[
 typedef struct vec2
 {
@@ -56,7 +56,7 @@ ffi.cdef[[
 typedef struct uiControlTest
 {
 	vec2 positionNormalized;
-	vec2 positionLocal;
+	vec2 _positionLocal;
 	vec2 positionAbsolute;
 	vec2 extentNormalized;
 	vec2 extent;
@@ -65,9 +65,34 @@ typedef struct uiControlTest
 } uiControlTest;
 ]]
 
-local ctrl = ffi.new("uiControlTest")
-ctrl.positionLocal.x = 0.1
+
+uiControl = ffi.metatype("uiControlTest", {
+		__new = function(self, cl)
+				return ffi.new("uiControlTest")
+			end,
+		__newindex = function(self, index, value)
+				info("set %s %s", index, value)
+				if index == "positionLocal" then
+					self._positionLocal = value
+				end
+			end,
+		__index = function(self, index)
+				info("get %s", index)
+				if index == "positionLocal" then
+					return self._positionLocal
+				end
+				return nil
+			end,
+	})
+
+local ctrl = uiControl()
+ctrl.positionLocal = { 75, 2 }
+ctrl.positionLocal.x = 9 -- doesn't call __newindex for ctrl
+
+-- conclusion: wrap stuff in setters, or add explicit update function
+
 info("%f", ctrl.positionLocal.x)
+
 testScissorA = ffi.new("uiScissorRule")
 testScissorA.scissorLocal.x = 0.5
 testScissorB = ffi.new("uiScissorRule")
@@ -76,7 +101,7 @@ ctrl.scissor = testScissorA
 info("%f", ctrl.scissor.scissorLocal.x)
 ctrl.scissor = testScissorB
 info("%f", ctrl.scissor.scissorLocal.x)
-]]
+
 
 
 

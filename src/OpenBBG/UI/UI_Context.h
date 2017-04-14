@@ -22,7 +22,6 @@ struct UI_Context
 	/**
 	 * Root control
 	 */
-
 	UI_Control *root;
 
 
