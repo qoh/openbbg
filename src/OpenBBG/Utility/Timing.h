@@ -21,7 +21,7 @@ typedef struct AverageLog AverageLog;
 // Time based average log
 struct AverageLog
 {
-	std::vector<float> log;
+	vector<float> log;
 
 	float trackLength;
 
@@ -54,7 +54,7 @@ struct AverageLog
 // Fixed length average log
 struct AverageLog
 {
-	std::vector<float> log;
+	vector<float> log;
 
 	uint32_t currentIdx;
 

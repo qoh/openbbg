@@ -1,7 +1,7 @@
 #pragma once
 
 // OpenBBG
-#include <OpenBBG/InternalConfig.h>
+#include <OpenBBG/Config.h>
 #if OPENBBG_WITH_VULKAN
 #include <OpenBBG/Renderer/Renderer_Vulkan.h>
 #endif

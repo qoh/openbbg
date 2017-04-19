@@ -121,7 +121,7 @@ inline EShLanguage FindLanguage(const VkShaderStageFlagBits shader_type)
 	}
 }
 
-inline bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std::vector<unsigned int> &spirv)
+inline bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, vector<unsigned int> &spirv)
 {
 	EShLanguage stage = FindLanguage(shader_type);
 	glslang::TShader shader(stage);

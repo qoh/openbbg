@@ -44,13 +44,13 @@ struct RenderNode
 	};
 
 	size_t numAttachments;
-	std::vector<VkAttachmentDescription> attachmentDescs;
-	std::vector<VkAttachmentReference> attachmentOutputRefs;
-	std::vector<VkAttachmentReference> attachmentInputRefs;
+	vector<VkAttachmentDescription> attachmentDescs;
+	vector<VkAttachmentReference> attachmentOutputRefs;
+	vector<VkAttachmentReference> attachmentInputRefs;
 
 	size_t numSubpasses;
-	std::vector<VkSubpassDescription> subpassDescs;
-	std::vector<VkSubpassDependency> subpassDeps;
+	vector<VkSubpassDescription> subpassDescs;
+	vector<VkSubpassDependency> subpassDeps;
 
     int width;
 	int height;
@@ -60,14 +60,14 @@ struct RenderNode
 	// Dependency Graph for Subpasses
 	// Renderpass
 
-	std::vector<VkFramebuffer> framebuffers;
+	vector<VkFramebuffer> framebuffers;
 	
 	bool hasRenderPass;
     VkRenderPass renderPass;
 	uint32_t numFramebuffers;
 
-	std::vector<ImageViewPair> primaryImagePairs;
-	std::vector<ImageViewPair> imagePairs;
+	vector<ImageViewPair> primaryImagePairs;
+	vector<ImageViewPair> imagePairs;
 
 	RenderNode(uint32_t numSamples, uint32_t numFramebuffers, bool hasPresent)
 		: hasPresent { hasPresent }
@@ -82,7 +82,7 @@ struct RenderNode
 		numSamplesBit = (VkSampleCountFlagBits)numSamples;
 	}
 
-	inline void SetAttachments(std::vector<AttachmentDescRefPair> attachmentInfo)
+	inline void SetAttachments(vector<AttachmentDescRefPair> attachmentInfo)
 	{
 		numAttachments = attachmentInfo.size();
 		attachmentDescs.resize(numAttachments);
@@ -97,7 +97,7 @@ struct RenderNode
 		imagePairs.resize(numAttachments);
 	}
 
-	inline void SetSubpasses(std::vector<SubpassDescDepPair> subpassInfo)
+	inline void SetSubpasses(vector<SubpassDescDepPair> subpassInfo)
 	{
 		numSubpasses = subpassInfo.size();
 		subpassDescs.resize(numSubpasses);
@@ -221,7 +221,7 @@ struct RenderNode
 			vkGetImageMemoryRequirements(device, ivPair.image, &memoryReqs);
 
 			allocateInfo.allocationSize = memoryReqs.size;
-			pass = memory_type_from_properties(deviceMemoryProperties, memoryReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &allocateInfo.memoryTypeIndex);
+			pass = GetMemoryTypeFromProperties(deviceMemoryProperties, memoryReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &allocateInfo.memoryTypeIndex);
 			assert(pass);
 
 			res = vkAllocateMemory(device, &allocateInfo, nullptr, &ivPair.mem);
@@ -245,7 +245,7 @@ struct RenderNode
 
 		VkResult res;
 
-		std::vector<VkImage> swapchainImages(numFramebuffers);
+		vector<VkImage> swapchainImages(numFramebuffers);
 		res = vkGetSwapchainImagesKHR(device, swapchain, &numFramebuffers, swapchainImages.data());
 		assert(res == VK_SUCCESS);
 
@@ -283,7 +283,7 @@ struct RenderNode
 		framebuffers.resize(numFramebuffers);
 
 		VkResult res;
-		std::vector<VkImageView> imageViews(numAttachments);
+		vector<VkImageView> imageViews(numAttachments);
 		uint32_t start = hasPresent ? 1 : 0;
 		for (uint32_t a = start; a < numAttachments; ++a)
 			imageViews[a] = imagePairs[a].view;

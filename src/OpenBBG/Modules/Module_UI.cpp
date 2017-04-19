@@ -6,6 +6,7 @@
 #include <OpenBBG/Game.h>
 #include <OpenBBG/UI/UI_Context.h>
 #include <OpenBBG/UI/UI_Control.h>
+#include <OpenBBG/UI/UI_Classes.h>
 
 namespace openbbg {
 
@@ -17,8 +18,9 @@ bool Module_UI::ModuleInit(Game *game)
 	// Test UI
 #if 1
 	UI_Context *ctx = new UI_Context();
-	UI_Control *root = new UI_Control();
+	UI_Control *root = UI_Class_Control::Get()->Construct();
 	ctx->SetRoot(root);
+	g_masterContext = ctx;
 #endif
 	Module_Lua::Get()->ExecuteScript("assets/scripts/ui-test.lua");
 

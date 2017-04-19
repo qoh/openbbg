@@ -3,6 +3,7 @@
 
 // OpenBBG
 #include <OpenBBG/UI/UI_Control.h>
+#include <OpenBBG/UI/UI_Class.h>
 
 namespace openbbg {
 
@@ -25,7 +26,37 @@ inline
 void
 UI_Context::SetRoot(UI_Control *ctrl)
 {
+	// Reset context references if root exists
+	if (root != nullptr && ctrl != root) {
+		root->RemoveFromContext();
+
+		deque<UI_Control *> q;
+		q.push_back(ctrl);
+		while (q.empty() == false) {
+			UI_Control *c = q.front();
+			q.pop_front();
+			c->context = this;
+			for (auto child : c->children)
+				q.push_back(child);
+		}
+	}
+
 	root = ctrl;
+
+	// Update context references
+	if (ctrl != nullptr) {
+		deque<UI_Control *> q;
+		q.push_back(ctrl);
+		while (q.empty() == false) {
+			UI_Control *c = q.front();
+			q.pop_front();
+			c->context = this;
+			for (auto child : c->children)
+				q.push_back(child);
+		}
+
+		ctrl->AddToContext();
+	}
 }
 
 inline
@@ -35,6 +66,42 @@ UI_Context::CleanupAll()
 	while (s_contextList.empty() == false)
 		delete s_contextList.back();
 }
+
+//-----------------------
+
+#if OPENBBG_WITH_VULKAN
+inline
+void
+UI_Context::Prepare(Renderer_Vulkan *r)
+{
+	// Prepare
+	for (auto uiClass : classes)
+		for (auto ctrl : uiClass->controls[this])
+			uiClass->Prepare(r, ctrl);
+}
+
+inline
+void
+UI_Context::Render(Renderer_Vulkan *r)
+{
+	// Render all opaque
+	for (auto uiClass : classes)
+		for (auto ctrl : uiClass->controls[this])
+			uiClass->RenderOpaque(r, ctrl);
+
+	// Render all transparent
+	for (auto uiClass : classes)
+		for (auto ctrl : uiClass->controls[this])
+			uiClass->RenderTransparent(r, ctrl);
+
+	// Clear depth
+
+	// Render all overlay
+	for (auto uiClass : classes)
+		for (auto ctrl : uiClass->controls[this])
+			uiClass->RenderOverlay(r, ctrl);
+}
+#endif
 
 }
 #endif

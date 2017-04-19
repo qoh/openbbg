@@ -1,7 +1,8 @@
-#pragma once
+#ifndef _OPENBBG__RENDERER__UTILITY_VULKAN_H_
+#define _OPENBBG__RENDERER__UTILITY_VULKAN_H_
 
 // OpenBBG
-#include <OpenBBG/InternalConfig.h>
+#include <OpenBBG/Config.h>
 
 // GLFW
 #ifdef _WIN32
@@ -18,23 +19,11 @@
 #define NUM_SCISSORS NUM_VIEWPORTS
 #define FENCE_TIMEOUT 100000000
 
-inline bool memory_type_from_properties(VkPhysicalDeviceMemoryProperties &deviceMemoryProperties, uint32_t typeBits, VkFlags requirements_mask, uint32_t *typeIndex)
-{
-    // Search memtypes to find first index with those properties
-    for (uint32_t i = 0; i < deviceMemoryProperties.memoryTypeCount; i++) {
-        if ((typeBits & 1) == 1) {
-            // Type is available, does it match user properties?
-            if ((deviceMemoryProperties.memoryTypes[i].propertyFlags & requirements_mask) == requirements_mask) {
-                *typeIndex = i;
-                return true;
-            }
-        }
-        typeBits >>= 1;
-    }
-    // No memory types matched, return failure
-    return false;
-}
+namespace openbbg {
 
+bool GetMemoryTypeFromProperties(VkPhysicalDeviceMemoryProperties &deviceMemoryProperties, uint32_t typeBits, VkFlags requirements_mask, uint32_t *typeIndex);
+
+}
 
 // OpenBBG
 #include <OpenBBG/Renderer/Vulkan_RenderNode.h>
@@ -43,6 +32,10 @@ inline bool memory_type_from_properties(VkPhysicalDeviceMemoryProperties &device
 #include <OpenBBG/Renderer/Vulkan_GlobalInstance.h>
 
 namespace openbbg {
+
+bool CreateBufferObject(vk::GlobalInstance &global, VkDeviceSize size, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags, VkBuffer &bufferObject, VkDeviceMemory &bufferMemory, VkMemoryRequirements *memReqReturn = nullptr);
+
+//---------------------------------------------
 
 struct texture_object {
     VkSampler sampler;
@@ -70,7 +63,7 @@ struct sample_info {
 
     VkSemaphore imageAcquiredSemaphore;
 
-    std::vector<struct texture_object> textures;
+    vector<struct texture_object> textures;
 
     struct {
         VkBuffer buf;
@@ -97,12 +90,12 @@ struct sample_info {
     glm::mat4 MVP;
 
     VkDescriptorPool desc_pool;
-    std::vector<VkDescriptorSet> desc_set;
+    vector<VkDescriptorSet> desc_set;
 
     PFN_vkCreateDebugReportCallbackEXT dbgCreateDebugReportCallback;
     PFN_vkDestroyDebugReportCallbackEXT dbgDestroyDebugReportCallback;
     PFN_vkDebugReportMessageEXT dbgBreakCallback;
-    std::vector<VkDebugReportCallbackEXT> debug_report_callbacks;
+    vector<VkDebugReportCallbackEXT> debug_report_callbacks;
 
     VkViewport viewport;
     VkRect2D scissor;
@@ -112,116 +105,51 @@ struct sample_info {
 
 inline void init_uniform_buffer(vk::GlobalInstance &global, struct sample_info &info)
 {
-    VkResult res;
-    bool pass;
-    float fov = glm::radians(45.0f);
-    if (global.width > global.height) {
-        fov *= static_cast<float>(global.height) / static_cast<float>(global.width);
-    }
-    info.Projection = glm::perspective(fov, static_cast<float>(global.width) / static_cast<float>(global.height), 0.1f, 100.0f);
-    info.View = glm::lookAt(glm::vec3(-5, 3, -10),  // Camera is at (-5,3,-10), in World Space
-                            glm::vec3(0, 0, 0),     // and looks at the origin
-                            glm::vec3(0, -1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
-                            );
-    info.Model = glm::mat4(1.0f);
-    // Vulkan clip space has inverted Y and half Z.
-    info.Clip = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+	float fov = glm::radians(45.0f);
+	if (global.width > global.height) {
+		fov *= static_cast<float>(global.height) / static_cast<float>(global.width);
+	}
+	info.Projection = glm::perspective(fov, static_cast<float>(global.width) / static_cast<float>(global.height), 0.1f, 100.0f);
+	info.View = glm::lookAt(glm::vec3(-5, 3, -10),  // Camera is at (-5,3,-10), in World Space
+			glm::vec3(0, 0, 0),     // and looks at the origin
+			glm::vec3(0, -1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
+	);
+	info.Model = glm::mat4(1.0f);
+	// Vulkan clip space has inverted Y and half Z.
+	info.Clip = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
 
-    info.MVP = info.Clip * info.Projection * info.View * info.Model;
+	info.MVP = info.Clip * info.Projection * info.View * info.Model;
 
-    /* VULKAN_KEY_START */
-    VkBufferCreateInfo buf_info = {};
-    buf_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buf_info.pNext = NULL;
-    buf_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    buf_info.size = sizeof(info.MVP);
-    buf_info.queueFamilyIndexCount = 0;
-    buf_info.pQueueFamilyIndices = NULL;
-    buf_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    buf_info.flags = 0;
-    res = vkCreateBuffer(global.device, &buf_info, NULL, &info.uniform_data.buf);
-    assert(res == VK_SUCCESS);
+	/* VULKAN_KEY_START */
+	VkMemoryRequirements memReqs;
+	assert(CreateBufferObject(global, sizeof(info.MVP), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, info.uniform_data.buf, info.uniform_data.mem, &memReqs));
 
-    VkMemoryRequirements mem_reqs;
-    vkGetBufferMemoryRequirements(global.device, info.uniform_data.buf, &mem_reqs);
+	uint8_t *pData;
+	assert(VK_SUCCESS == vkMapMemory(global.device, info.uniform_data.mem, 0, sizeof(info.MVP), 0, (void **)&pData));
 
-    VkMemoryAllocateInfo alloc_info = {};
-    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    alloc_info.pNext = NULL;
-    alloc_info.memoryTypeIndex = 0;
+	memcpy(pData, &info.MVP, sizeof(info.MVP));
 
-    alloc_info.allocationSize = mem_reqs.size;
-    pass = memory_type_from_properties(global.deviceMemoryProperties, mem_reqs.memoryTypeBits,
-                                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                       &alloc_info.memoryTypeIndex);
-    assert(pass && "No mappable, coherent memory");
+	vkUnmapMemory(global.device, info.uniform_data.mem);
 
-    res = vkAllocateMemory(global.device, &alloc_info, NULL, &(info.uniform_data.mem));
-    assert(res == VK_SUCCESS);
-
-    uint8_t *pData;
-    res = vkMapMemory(global.device, info.uniform_data.mem, 0, mem_reqs.size, 0, (void **)&pData);
-    assert(res == VK_SUCCESS);
-
-    memcpy(pData, &info.MVP, sizeof(info.MVP));
-
-    vkUnmapMemory(global.device, info.uniform_data.mem);
-
-    res = vkBindBufferMemory(global.device, info.uniform_data.buf, info.uniform_data.mem, 0);
-    assert(res == VK_SUCCESS);
-
-    info.uniform_data.buffer_info.buffer = info.uniform_data.buf;
-    info.uniform_data.buffer_info.offset = 0;
-    info.uniform_data.buffer_info.range = sizeof(info.MVP);
+	info.uniform_data.buffer_info.buffer = info.uniform_data.buf;
+	info.uniform_data.buffer_info.offset = 0;
+	info.uniform_data.buffer_info.range = sizeof(info.MVP);
 }
 
 inline void init_vertex_buffer(vk::GlobalInstance &global, struct sample_info &info, const void *vertexData, uint32_t dataSize, uint32_t dataStride,
                         bool use_texture)
 {
-    VkResult res;
-    bool pass;
+	VkMemoryRequirements memReqs;
+	assert(CreateBufferObject(global, dataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, info.vertex_buffer.buf, info.vertex_buffer.mem, &memReqs));
+	info.vertex_buffer.buffer_info.range = memReqs.size;
+	info.vertex_buffer.buffer_info.offset = 0;
 
-    VkBufferCreateInfo buf_info = {};
-    buf_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buf_info.pNext = NULL;
-    buf_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    buf_info.size = dataSize;
-    buf_info.queueFamilyIndexCount = 0;
-    buf_info.pQueueFamilyIndices = NULL;
-    buf_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    buf_info.flags = 0;
-    res = vkCreateBuffer(global.device, &buf_info, NULL, &info.vertex_buffer.buf);
-    assert(res == VK_SUCCESS);
+	uint8_t *pData;
+	assert(VK_SUCCESS == vkMapMemory(global.device, info.vertex_buffer.mem, 0, memReqs.size, 0, (void **)&pData));
 
-    VkMemoryRequirements mem_reqs;
-    vkGetBufferMemoryRequirements(global.device, info.vertex_buffer.buf, &mem_reqs);
+	memcpy(pData, vertexData, dataSize);
 
-    VkMemoryAllocateInfo alloc_info = {};
-    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    alloc_info.pNext = NULL;
-    alloc_info.memoryTypeIndex = 0;
-
-    alloc_info.allocationSize = mem_reqs.size;
-    pass = memory_type_from_properties(global.deviceMemoryProperties, mem_reqs.memoryTypeBits,
-                                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                       &alloc_info.memoryTypeIndex);
-    assert(pass && "No mappable, coherent memory");
-
-    res = vkAllocateMemory(global.device, &alloc_info, NULL, &(info.vertex_buffer.mem));
-    assert(res == VK_SUCCESS);
-    info.vertex_buffer.buffer_info.range = mem_reqs.size;
-    info.vertex_buffer.buffer_info.offset = 0;
-
-    uint8_t *pData;
-    res = vkMapMemory(global.device, info.vertex_buffer.mem, 0, mem_reqs.size, 0, (void **)&pData);
-    assert(res == VK_SUCCESS);
-
-    memcpy(pData, vertexData, dataSize);
-
-    vkUnmapMemory(global.device, info.vertex_buffer.mem);
-
-    res = vkBindBufferMemory(global.device, info.vertex_buffer.buf, info.vertex_buffer.mem, 0);
-    assert(res == VK_SUCCESS);
+	vkUnmapMemory(global.device, info.vertex_buffer.mem);
 }
 
 inline void init_descriptor_pool(vk::GlobalInstance &global, struct sample_info &info, bool use_texture)
@@ -278,17 +206,6 @@ inline void init_descriptor_set(vk::GlobalInstance &global, struct sample_info &
     writes[0].pBufferInfo = &info.uniform_data.buffer_info;
     writes[0].dstArrayElement = 0;
     writes[0].dstBinding = 0;
-
-    if (use_texture) {
-        writes[1] = {};
-        writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writes[1].dstSet = info.desc_set[0];
-        writes[1].dstBinding = 1;
-        writes[1].descriptorCount = 1;
-        writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        writes[1].pImageInfo = &info.texture_data.image_info;
-        writes[1].dstArrayElement = 0;
-    }
 
     vkUpdateDescriptorSets(global.device, use_texture ? 2 : 1, writes, 0, NULL);
 }
@@ -384,3 +301,7 @@ inline void set_image_layout(vk::GlobalInstance &global, struct sample_info &inf
 }
 
 }
+#endif
+
+// Definitions
+#include <OpenBBG/Renderer/Utility_Vulkan_def.h>

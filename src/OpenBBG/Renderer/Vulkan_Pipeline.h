@@ -27,12 +27,12 @@ struct GraphicsPipeline
 	bool isInitialized;
 	
     VkPipelineLayout pipeline_layout;
-    std::vector<VkDescriptorSetLayout> desc_layout;
+    vector<VkDescriptorSetLayout> desc_layout;
 	map<RenderNodeSubpassPair, VkPipeline> nodePipelineSubpassMap;
     VkVertexInputBindingDescription vi_binding;
     VkVertexInputAttributeDescription vi_attribs[2];
 	
-	std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+	vector<VkPipelineShaderStageCreateInfo> shaderStages;
 	vector<const char *> glslSources;
 	vector<vector<VkDescriptorSetLayoutBinding>> descriptorSetLayouts;
 	vector<VkVertexInputBindingDescription> viBindingDescriptions;
@@ -172,7 +172,7 @@ struct GraphicsPipeline
 		uint32_t numShaderStages = (uint32_t)shaderStages.size();
 		for (uint32_t a = 0; a < numShaderStages; ++a) {
 			auto &shaderStage = shaderStages[a];
-			std::vector<unsigned int> spvCode;
+			vector<unsigned int> spvCode;
 			retVal = GLSLtoSPV(shaderStage.stage, glslSources[a], spvCode);
 			assert(retVal);
 			moduleCreateInfo.codeSize = spvCode.size() * sizeof(unsigned int);

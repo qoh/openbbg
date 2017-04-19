@@ -34,10 +34,12 @@
 			Window.cpp
 			Window.h
 			Common/
-				TreeNode.h
-				TreeNode_def.h
 				DirectedAcyclicGraphNode.h
 				DirectedAcyclicGraphNode_def.h
+				Singleton.h
+				Singleton_def.h
+				TreeNode.h
+				TreeNode_def.h
 			External/
 				EASTL.cpp
 			Modules/
@@ -61,14 +63,20 @@
 				Renderer_Vulkan.cpp
 				Renderer_Vulkan.h
 				Utility_Vulkan.h
+				Utility_Vulkan_def.h
 				Vulkan_CommandPool.h
 				Vulkan_GlobalInstance.h
+				Vulkan_GlobalInstance_def.h
 				Vulkan_Pipeline.h
 				Vulkan_RenderNode.h
 				Vulkan_ShaderUtility.h
 			UI/
 				UI_Class.cpp
 				UI_Class.h
+				UI_Class_def.h
+				UI_Class_Control.cpp
+				UI_Class_Control.h
+				UI_Classes.h
 				UI_Component.cpp
 				UI_Component.h
 				UI_Context.cpp

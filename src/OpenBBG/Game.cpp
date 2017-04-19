@@ -5,6 +5,6 @@
 
 namespace openbbg {
 
-Game *Game::s_instance = nullptr;
+IMPLEMENT_SINGLETON(Game);
 
 }

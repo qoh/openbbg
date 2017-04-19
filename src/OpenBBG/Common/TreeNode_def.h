@@ -44,7 +44,7 @@ TreeNode<T>::MoveChildToFront(T *node)
 {
 	if (IsChild(node) == false || children.front() == node)
 		return;
-	children.erase(std::find(children.begin(), children.end(), node));
+	children.erase(find(children.begin(), children.end(), node));
 	children.insert(children.begin(), node);
 	static_cast<T *>(this)->OnChildrenChanged();
 }
@@ -56,7 +56,7 @@ TreeNode<T>::MoveChildToBack(T *node)
 {
 	if (IsChild(node) == false || children.back() == node)
 		return;
-	children.erase(std::find(children.begin(), children.end(), node));
+	children.erase(find(children.begin(), children.end(), node));
 	children.push_back(node);
 	static_cast<T *>(this)->OnChildrenChanged();
 }
@@ -68,8 +68,8 @@ TreeNode<T>::MoveChildForward(T *node)
 {
 	if (IsChild(node) == false || children.front() == node)
 		return;
-	auto search { std::find(children.begin(), children.end(), node) };
-	std::swap(*search, *(search - 1));
+	auto search { find(children.begin(), children.end(), node) };
+	swap(*search, *(search - 1));
 	static_cast<T *>(this)->OnChildrenChanged();
 }
 
@@ -80,8 +80,8 @@ TreeNode<T>::MoveChildBackward(T *node)
 {
 	if (IsChild(node) == false || children.back() == node)
 		return;
-	auto search { std::find(children.begin(), children.end(), node) };
-	std::swap(*search, *(search + 1));
+	auto search { find(children.begin(), children.end(), node) };
+	swap(*search, *(search + 1));
 	static_cast<T *>(this)->OnChildrenChanged();
 }
 

@@ -8,6 +8,7 @@
 #include <OpenBBG/Window.h>
 #include <OpenBBG/Log.h>
 #include <OpenBBG/Renderer/RenderNode.h>
+#include <OpenBBG/UI/UI_Context.h>
 
 // REF: https://vulkan.lunarg.com/doc/sdk/1.0.42.1/windows/tutorial/html/index.html
 
@@ -16,34 +17,6 @@
 namespace openbbg {
 
 deque<vk::GraphicsPipeline *> vk::GraphicsPipeline::s_pipelines;
-
-static const char *vertShaderText =
-    "#version 400\n"
-    "#extension GL_ARB_separate_shader_objects : enable\n"
-    "#extension GL_ARB_shading_language_420pack : enable\n"
-    "layout (std140, binding = 0) uniform bufferVals {\n"
-    "    mat4 mvp;\n"
-    "} myBufferVals;\n"
-    "layout (location = 0) in vec4 pos;\n"
-    "layout (location = 1) in vec4 inColor;\n"
-    "layout (location = 0) out vec4 outColor;\n"
-    "out gl_PerVertex { \n"
-    "    vec4 gl_Position;\n"
-    "};\n"
-    "void main() {\n"
-    "   outColor = inColor;\n"
-    "   gl_Position = myBufferVals.mvp * pos;\n"
-    "}\n";
-
-static const char *fragShaderText =
-    "#version 400\n"
-    "#extension GL_ARB_separate_shader_objects : enable\n"
-    "#extension GL_ARB_shading_language_420pack : enable\n"
-    "layout (location = 0) in vec4 color;\n"
-    "layout (location = 0) out vec4 outColor;\n"
-    "void main() {\n"
-    "   outColor = color;\n"
-    "}\n";
 
 struct Vertex {
     float posX, posY, posZ, posW;  // Position data
@@ -190,7 +163,6 @@ Renderer_Vulkan::~Renderer_Vulkan()
 
 VkSemaphore imageAcquiredSemaphore;
 VkFence drawFence;
-vk::GraphicsPipeline *graphicsPipeline = nullptr;
 void Renderer_Vulkan::Init()
 {
 	if (isInitialized)
@@ -205,182 +177,6 @@ void Renderer_Vulkan::Init()
 
 	//-----------------------------
 
-	graphicsPipeline = new vk::GraphicsPipeline(
-		// vector<VkPipelineShaderStageCreateInfo>
-		{
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				nullptr,
-				0,
-				VK_SHADER_STAGE_VERTEX_BIT,
-				nullptr,
-				"main",
-				nullptr
-			}, {
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				nullptr,
-				0,
-				VK_SHADER_STAGE_FRAGMENT_BIT,
-				nullptr,
-				"main",
-				nullptr
-			}
-		},
-		// vector<const char *> glslSources
-		{
-			vertShaderText,
-			fragShaderText
-		},
-		// vector<vector<VkDescriptorSetLayoutBinding>>
-		{
-			{
-				{
-					0,
-					VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-					1,
-					VK_SHADER_STAGE_VERTEX_BIT,
-					nullptr
-				}
-			}
-		},
-		// vector<VkVertexInputBindingDescription>
-		{
-			{
-				0,
-				sizeof(g_vb_solid_face_colors_Data[0]),
-				VK_VERTEX_INPUT_RATE_VERTEX
-			}
-		},
-		// vector<VkVertexInputAttributeDescription>
-		{
-			{
-				0,
-				0,
-				VK_FORMAT_R32G32B32A32_SFLOAT,
-				0
-			}, {
-				1,
-				0,
-				VK_FORMAT_R32G32B32A32_SFLOAT,
-				16
-			}
-		},
-		// VkPipelineInputAssemblyStateCreateInfo
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-			nullptr,
-			0,
-			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-			VK_FALSE
-		},
-		// VkPipelineTessellationStateCreateInfo
-		{
-		},
-		// VkPipelineViewportStateCreateInfo
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-			nullptr,
-			0,
-			1,
-			nullptr,
-			1,
-			nullptr
-		},
-		// VkPipelineRasterizationStateCreateInfo
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-			nullptr,
-			0,
-			VK_TRUE,
-			VK_FALSE,
-			VK_POLYGON_MODE_FILL,
-			VK_CULL_MODE_BACK_BIT,
-			VK_FRONT_FACE_CLOCKWISE,
-			VK_FALSE,
-			0.f,
-			0.f,
-			0.f,
-			1.f
-		},
-		// VkPipelineMultisampleStateCreateInfo
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-			nullptr,
-			0,
-			NUM_SAMPLES,
-			VK_FALSE,
-			0.f,
-			nullptr,
-			VK_FALSE,
-			VK_FALSE
-		},
-		// VkPipelineDepthStencilStateCreateInfo
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-			nullptr,
-			0,
-			VK_TRUE,
-			VK_TRUE,
-			VK_COMPARE_OP_LESS_OR_EQUAL,
-			VK_FALSE,
-			VK_FALSE,
-			{
-				VK_STENCIL_OP_KEEP,
-				VK_STENCIL_OP_KEEP,
-				VK_STENCIL_OP_KEEP,
-				VK_COMPARE_OP_ALWAYS,
-				0,
-				0,
-				0
-			},
-			{
-				VK_STENCIL_OP_KEEP,
-				VK_STENCIL_OP_KEEP,
-				VK_STENCIL_OP_KEEP,
-				VK_COMPARE_OP_ALWAYS,
-				0,
-				0,
-				0
-			},
-			0.f,
-			0.f
-		},
-		// VkPipelineColorBlendStateCreateInfo
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-			nullptr,
-			0,
-			VK_FALSE,
-			VK_LOGIC_OP_NO_OP,
-			0,
-			nullptr,
-			{ 1.f, 1.f, 1.f, 1.f }
-		},
-		// vector<VkPipelineColorBlendAttachmentState>
-		{
-			{
-				VK_FALSE,
-				VK_BLEND_FACTOR_ZERO,
-				VK_BLEND_FACTOR_ZERO,
-				VK_BLEND_OP_ADD,
-				VK_BLEND_FACTOR_ZERO,
-				VK_BLEND_FACTOR_ZERO,
-				VK_BLEND_OP_ADD,
-				0xf
-			}
-		},
-		// vector<VkDynamicState>
-		{
-			VK_DYNAMIC_STATE_VIEWPORT,
-			VK_DYNAMIC_STATE_SCISSOR
-		}
-	);
-
-	graphicsPipeline->Init(global.device);
-	global.testPipeline = graphicsPipeline->CreatePipeline(global.device, global.pipelineCache, global.renderNode, 0);
-
-
-
 
 
 
@@ -390,7 +186,6 @@ void Renderer_Vulkan::Init()
 	init_vertex_buffer(global, info, g_vb_solid_face_colors_Data, sizeof(g_vb_solid_face_colors_Data),
 					   sizeof(g_vb_solid_face_colors_Data[0]), false);
 	init_descriptor_pool(global, info, false);
-	init_descriptor_set(global, info, graphicsPipeline, false);
 	
 	VkResult res;
 
@@ -429,11 +224,11 @@ void Renderer_Vulkan::ResizeFramebuffer(int x, int y)
 	global.renderNode->CreateFramebuffers(global.device);
 
 	// Uniform Buffer & Descriptor Set
-	vkDestroyBuffer(global.device, info.uniform_data.buf, NULL);
-	vkFreeMemory(global.device, info.uniform_data.mem, NULL);
-	vkFreeDescriptorSets(global.device, info.desc_pool, (uint32_t)info.desc_set.size(), info.desc_set.data());
-	init_uniform_buffer(global, info);
-	init_descriptor_set(global, info, graphicsPipeline, false);
+//	vkDestroyBuffer(global.device, info.uniform_data.buf, NULL);
+//	vkFreeMemory(global.device, info.uniform_data.mem, NULL);
+//	vkFreeDescriptorSets(global.device, info.desc_pool, (uint32_t)info.desc_set.size(), info.desc_set.data());
+//	init_uniform_buffer(global, info);
+//	init_descriptor_set(global, info, graphicsPipeline, false);
 }
 
 void Renderer_Vulkan::Render()
@@ -457,6 +252,9 @@ void Renderer_Vulkan::Render()
 	global.primaryCommandPool.BeginCurrentBuffer();
 
 	Game::Get()->jobsFrameStart.ProcessAllCurrent();
+
+	if (g_masterContext != nullptr)
+		g_masterContext->Prepare(this);
 
 	{
 		VkClearValue clear_values[2];
@@ -486,6 +284,8 @@ void Renderer_Vulkan::Render()
 		// return codes
 		assert(res == VK_SUCCESS);
 
+		// TODO: Encapsulate all of the following into the render graph generation
+
 		VkRenderPassBeginInfo rp_begin;
 		rp_begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		rp_begin.pNext = NULL;
@@ -500,17 +300,18 @@ void Renderer_Vulkan::Render()
 
 		vkCmdBeginRenderPass(global.primaryCommandPool.currentBuffer, &rp_begin, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, global.testPipeline);
-		vkCmdBindDescriptorSets(global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->pipeline_layout, 0, NUM_DESCRIPTOR_SETS,
-								info.desc_set.data(), 0, NULL);
-
-		const VkDeviceSize offsets[1] = {0};
-		vkCmdBindVertexBuffers(global.primaryCommandPool.currentBuffer, 0, 1, &info.vertex_buffer.buf, offsets);
-
+		//----------------------------------------------
+		
 		init_viewports(global, info);
 		init_scissors(global, info);
 
-		vkCmdDraw(global.primaryCommandPool.currentBuffer, 12 * 3, 1, 0, 0);
+		// TODO: Render current UI context
+		if (g_masterContext != nullptr)
+			g_masterContext->Render(this);
+
+
+		//-----------------------------------------------
+
 		vkCmdEndRenderPass(global.primaryCommandPool.currentBuffer);
 
 	}
@@ -597,11 +398,6 @@ void Renderer_Vulkan::Destroy()
 	vkDestroySemaphore(global.device, imageAcquiredSemaphore, NULL);
 	vkDestroyFence(global.device, drawFence, NULL);
 
-	delete graphicsPipeline;
-	graphicsPipeline = nullptr;
-
-	vkFreeDescriptorSets(global.device, info.desc_pool, (uint32_t)info.desc_set.size(), info.desc_set.data());
-
 	// Descriptor Pool
 	vkDestroyDescriptorPool(global.device, info.desc_pool, NULL);
 
@@ -612,7 +408,6 @@ void Renderer_Vulkan::Destroy()
 	// Uniform Buffer
 	vkDestroyBuffer(global.device, info.uniform_data.buf, NULL);
 	vkFreeMemory(global.device, info.uniform_data.mem, NULL);
-
 
 	//----------------------
 

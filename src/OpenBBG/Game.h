@@ -2,20 +2,14 @@
 
 // OpenBBG
 #include <OpenBBG/Job.h>
+#include <OpenBBG/Common/Singleton.h>
 
 namespace openbbg {
 
 typedef struct Game Game;
 
-struct Game
+struct Game : Singleton<Game>
 {
-	static Game *s_instance;
-
-	static inline Game *Get()
-	{
-		return s_instance;
-	}
-
 	volatile bool isRunning;
 
 	Game()
@@ -24,7 +18,6 @@ struct Game
 		, jobsFrameEnd { isRunning, false }
 		, jobsAsync { isRunning, true, std::thread::hardware_concurrency() }
 	{
-		s_instance = this;
 	}
 
 	JobPool jobsFrameStart;
