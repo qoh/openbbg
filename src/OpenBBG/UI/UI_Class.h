@@ -35,10 +35,11 @@ struct UI_Class
 #if OPENBBG_WITH_VULKAN
 	virtual void Init(Renderer_Vulkan *r) = 0;
 	virtual void Cleanup(Renderer_Vulkan *r) = 0;
-	virtual void Prepare(Renderer_Vulkan *r, UI_Control *ctrl) = 0;
-	virtual void RenderOpaque(Renderer_Vulkan *r, UI_Control *ctrl) = 0;
-	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Control *ctrl) = 0;
-	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Control *ctrl) = 0;
+	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx) = 0;
+	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl) = 0;
+	virtual void RenderOpaque(Renderer_Vulkan *r, UI_Context *ctx) = 0;
+	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl) = 0;
+	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl) = 0;
 #endif
 };
 

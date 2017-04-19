@@ -23,13 +23,15 @@ struct UI_Class_ColorCtrl
 
 	virtual void Cleanup(Renderer_Vulkan *r);
 
-	virtual void Prepare(Renderer_Vulkan *r, UI_Control *ctrl);
+	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx);
 
-	virtual void RenderOpaque(Renderer_Vulkan *r, UI_Control *ctrl);
+	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl);
 
-	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Control *ctrl);
+	virtual void RenderOpaque(Renderer_Vulkan *r, UI_Context *ctx);
 
-	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Control *ctrl);
+	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl);
+
+	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl);
 
 	VkPipeline pipeline;
 

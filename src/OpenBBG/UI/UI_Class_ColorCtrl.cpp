@@ -300,14 +300,19 @@ UI_Class_ColorCtrl::Cleanup(Renderer_Vulkan *r)
 }
 
 void
-UI_Class_ColorCtrl::Prepare(Renderer_Vulkan *r, UI_Control *ctrl)
+UI_Class_ColorCtrl::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
 {
 	if (isInitialized == false)
 		Init(r);
 }
 
 void
-UI_Class_ColorCtrl::RenderOpaque(Renderer_Vulkan *r, UI_Control *ctrl)
+UI_Class_ColorCtrl::Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl)
+{
+}
+
+void
+UI_Class_ColorCtrl::RenderOpaque(Renderer_Vulkan *r, UI_Context *ctx)
 {
 	vkCmdBindPipeline(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 	vkCmdBindDescriptorSets(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->pipeline_layout, 0, (uint32_t)r->global.descGlobalParamSets.size(), r->global.descGlobalParamSets.data(), 0, nullptr);
@@ -317,12 +322,12 @@ UI_Class_ColorCtrl::RenderOpaque(Renderer_Vulkan *r, UI_Control *ctrl)
 }
 
 void
-UI_Class_ColorCtrl::RenderTransparent(Renderer_Vulkan *r, UI_Control *ctrl)
+UI_Class_ColorCtrl::RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl)
 {
 }
 
 void
-UI_Class_ColorCtrl::RenderOverlay(Renderer_Vulkan *r, UI_Control *ctrl)
+UI_Class_ColorCtrl::RenderOverlay(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl)
 {
 }
 #endif

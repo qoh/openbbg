@@ -75,9 +75,11 @@ void
 UI_Context::Prepare(Renderer_Vulkan *r)
 {
 	// Prepare
-	for (auto uiClass : classes)
+	for (auto uiClass : classes) {
+		uiClass->Prepare(r, this);
 		for (auto ctrl : uiClass->controls[this])
-			uiClass->Prepare(r, ctrl);
+			uiClass->Prepare(r, this, ctrl);
+	}
 }
 
 inline
@@ -86,20 +88,19 @@ UI_Context::Render(Renderer_Vulkan *r)
 {
 	// Render all opaque
 	for (auto uiClass : classes)
-		for (auto ctrl : uiClass->controls[this])
-			uiClass->RenderOpaque(r, ctrl);
+		uiClass->RenderOpaque(r, this);
 
 	// Render all transparent
 	for (auto uiClass : classes)
 		for (auto ctrl : uiClass->controls[this])
-			uiClass->RenderTransparent(r, ctrl);
+			uiClass->RenderTransparent(r, this, ctrl);
 
 	// Clear depth
 
 	// Render all overlay
 	for (auto uiClass : classes)
 		for (auto ctrl : uiClass->controls[this])
-			uiClass->RenderOverlay(r, ctrl);
+			uiClass->RenderOverlay(r, this, ctrl);
 }
 #endif
 
