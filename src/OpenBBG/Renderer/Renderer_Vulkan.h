@@ -41,8 +41,6 @@ struct Renderer_Vulkan
 
 	void ResizeFramebuffer(int x, int y);
 
-	struct sample_info info;
-
 	vk::GlobalInstance global;
 };
 

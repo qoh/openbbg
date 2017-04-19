@@ -11,6 +11,8 @@ GlobalInstance::GlobalInstance()
 	, renderNode { nullptr }
 	, swapchainCreateInfo {}
 {
+	viewport.maxDepth = 1.f;
+	viewport.minDepth = 0.f;
 }
 
 inline
@@ -496,6 +498,18 @@ GlobalInstance::Init(const char *appSimpleName, GLFWwindow *window)
 	assert(CreateGlobalBuffers());
 	assert(CreateGlobalDescriptorPoolsAndSets());
 
+	VkSemaphoreCreateInfo imageAcquiredSemaphoreCreateInfo;
+	imageAcquiredSemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	imageAcquiredSemaphoreCreateInfo.pNext = nullptr;
+	imageAcquiredSemaphoreCreateInfo.flags = 0;
+	assert(VK_SUCCESS == vkCreateSemaphore(device, &imageAcquiredSemaphoreCreateInfo, nullptr, &imageAcquiredSemaphore));
+	
+	VkFenceCreateInfo fenceInfo;
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.pNext = nullptr;
+	fenceInfo.flags = 0;
+	vkCreateFence(device, &fenceInfo, nullptr, &drawFence);
+
 	isInitialized = true;
 	return true;
 }
@@ -512,6 +526,12 @@ GlobalInstance::Cleanup()
 		delete renderNode;
 		renderNode = nullptr;
 	}
+
+	//---------------------------
+
+	vkDestroySemaphore(device, imageAcquiredSemaphore, nullptr);
+
+	vkDestroyFence(device, drawFence, nullptr);
 
 	//----------------------------
 	
@@ -546,6 +566,28 @@ GlobalInstance::Cleanup()
 	vkDestroyInstance(instance, nullptr);
 
 	isInitialized = false;
+}
+
+inline
+void
+GlobalInstance::SetViewport(float x, float y, float w, float h)
+{
+    viewport.x = x;
+    viewport.y = y;
+    viewport.width = w;
+    viewport.height = h;
+    vkCmdSetViewport(primaryCommandPool.currentBuffer, 0, 1, &viewport);
+}
+
+inline
+void
+GlobalInstance::SetScissor(int32_t x, int32_t y, int32_t w, int32_t h)
+{
+    scissor.offset.x = x;
+    scissor.offset.y = y;
+    scissor.extent.width = w;
+    scissor.extent.height = h;
+    vkCmdSetScissor(primaryCommandPool.currentBuffer, 0, 1, &scissor);
 }
 
 inline

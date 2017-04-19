@@ -9,6 +9,7 @@ IMPLEMENT_SINGLETON(UI_Class_Control);
 
 UI_Class_Control::UI_Class_Control()
 	: UI_Class()
+	, graphicsPipeline { nullptr }
 {
 }
 
@@ -25,8 +26,6 @@ UI_Class_Control::Construct()
 }
 
 #if OPENBBG_WITH_VULKAN
-
-
 static const char *vertShaderText =
     "#version 400\n"
     "#extension GL_ARB_separate_shader_objects : enable\n"
@@ -55,13 +54,11 @@ static const char *fragShaderText =
     "   outColor = color;\n"
     "}\n";
 
-
 struct Vertex {
     float posX, posY, posZ, posW;  // Position data
     float r, g, b, a;              // Color
 };
 
-#define XYZ1(_x_, _y_, _z_) (_x_), (_y_), (_z_), 1.f
 static const Vertex g_vb_solid_face_colors_Data[] = {
     // red face
     {XYZ1(-1, -1, 1), XYZ1(1.f, 0.f, 0.f)},
@@ -107,10 +104,6 @@ static const Vertex g_vb_solid_face_colors_Data[] = {
     {XYZ1(-1, -1, -1), XYZ1(0.f, 1.f, 1.f)},
 };
 
-VkPipeline testPipeline;
-
-
-vk::GraphicsPipeline *graphicsPipeline = nullptr;
 void
 UI_Class_Control::Init(Renderer_Vulkan *r)
 {
@@ -289,8 +282,29 @@ UI_Class_Control::Init(Renderer_Vulkan *r)
 	);
 
 	graphicsPipeline->Init(r->global.device);
-	testPipeline = graphicsPipeline->CreatePipeline(r->global.device, r->global.pipelineCache, r->global.renderNode, 0);
+	pipeline = graphicsPipeline->CreatePipeline(r->global.device, r->global.pipelineCache, r->global.renderNode, 0);
 	
+	// Vertex Buffer
+	{
+		VkMemoryRequirements memReqs;
+		assert(r->global.CreateBufferObject(
+			sizeof(g_vb_solid_face_colors_Data),
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			vertexBufferObject,
+			vertexBufferMemory,
+			&memReqs));
+		vertexBufferInfo.range = memReqs.size;
+		vertexBufferInfo.offset = 0;
+
+		uint8_t *pData;
+		assert(VK_SUCCESS == vkMapMemory(r->global.device, vertexBufferMemory, 0, memReqs.size, 0, (void **)&pData));
+
+		memcpy(pData, g_vb_solid_face_colors_Data, sizeof(g_vb_solid_face_colors_Data));
+
+		vkUnmapMemory(r->global.device, vertexBufferMemory);
+	}
+
 	isInitialized = true;
 }
 
@@ -299,6 +313,12 @@ UI_Class_Control::Cleanup(Renderer_Vulkan *r)
 {
 	if (isInitialized == false)
 		return;
+	
+	// Vertex Buffer
+	vkDestroyBuffer(r->global.device, vertexBufferObject, nullptr);
+	vkFreeMemory(r->global.device, vertexBufferMemory, nullptr);
+
+	vkDestroyPipeline(r->global.device, pipeline, nullptr);
 
 	delete graphicsPipeline;
 	graphicsPipeline = nullptr;
@@ -316,11 +336,10 @@ UI_Class_Control::Prepare(Renderer_Vulkan *r, UI_Control *ctrl)
 void
 UI_Class_Control::RenderOpaque(Renderer_Vulkan *r, UI_Control *ctrl)
 {
-	vkCmdBindPipeline(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, testPipeline);
+	vkCmdBindPipeline(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 	vkCmdBindDescriptorSets(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->pipeline_layout, 0, (uint32_t)r->global.descGlobalParamSets.size(), r->global.descGlobalParamSets.data(), 0, nullptr);
 	const VkDeviceSize offsets[1] = { 0 };
-	vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 0, 1, &r->info.vertex_buffer.buf, offsets);
-
+	vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 0, 1, &vertexBufferObject, offsets);
 	vkCmdDraw(r->global.primaryCommandPool.currentBuffer, 12 * 3, 1, 0, 0);
 }
 

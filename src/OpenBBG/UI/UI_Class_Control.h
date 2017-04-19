@@ -30,6 +30,15 @@ struct UI_Class_Control
 	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Control *ctrl);
 
 	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Control *ctrl);
+
+	VkPipeline pipeline;
+
+	vk::GraphicsPipeline *graphicsPipeline;
+
+	// Vertex Buffer
+	VkBuffer vertexBufferObject;
+	VkDeviceMemory vertexBufferMemory;
+	VkDescriptorBufferInfo vertexBufferInfo;
 #endif
 };
 

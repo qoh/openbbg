@@ -58,6 +58,12 @@ struct GlobalInstance
     VkDescriptorPool descGlobalParamPool;
     vector<VkDescriptorSet> descGlobalParamSets;
 
+	VkSemaphore imageAcquiredSemaphore;
+	VkFence drawFence;
+
+    VkViewport viewport;
+    VkRect2D scissor;
+
 	GlobalInstance();
 
 	~GlobalInstance();
@@ -110,6 +116,10 @@ struct GlobalInstance
 	//- Utility Functions -
 
 	bool CreateBufferObject(VkDeviceSize size, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags, VkBuffer &bufferObject, VkDeviceMemory &bufferMemory, VkMemoryRequirements *memReqReturn = nullptr);
+
+	void SetViewport(float x, float y, float w, float h);
+
+	void SetScissor(int32_t x, int32_t y, int32_t w, int32_t h);
 
 
 	//------------------------------------------------------------------------------
