@@ -3,5 +3,6 @@
 
 // OpenBBG
 #include <OpenBBG/UI/UI_Class_Control.h>
+#include <OpenBBG/UI/UI_Class_ColorCtrl.h>
 
 #endif

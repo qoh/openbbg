@@ -76,6 +76,8 @@
 				UI_Class_def.h
 				UI_Class_Control.cpp
 				UI_Class_Control.h
+				UI_Class_ColorCtrl.cpp
+				UI_Class_ColorCtrl.h
 				UI_Classes.h
 				UI_Component.cpp
 				UI_Component.h

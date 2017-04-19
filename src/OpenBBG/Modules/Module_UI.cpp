@@ -18,7 +18,7 @@ bool Module_UI::ModuleInit(Game *game)
 	// Test UI
 #if 1
 	UI_Context *ctx = new UI_Context();
-	UI_Control *root = UI_Class_Control::Get()->Construct();
+	UI_Control *root = UI_Class_ColorCtrl::Get()->Construct();
 	ctx->SetRoot(root);
 	g_masterContext = ctx;
 #endif

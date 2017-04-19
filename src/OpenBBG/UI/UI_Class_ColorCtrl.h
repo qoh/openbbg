@@ -1,20 +1,20 @@
-#ifndef _OPENBBG__UI__UI_CLASS_CONTROL_H_
-#define _OPENBBG__UI__UI_CLASS_CONTROL_H_
+#ifndef _OPENBBG__UI__UI_CLASS_COLORCTRL_H_
+#define _OPENBBG__UI__UI_CLASS_COLORCTRL_H_
 
 // OpenBBG
 #include <OpenBBG/UI/UI_Class.h>
 
 namespace openbbg {
 
-typedef struct UI_Class_Control UI_Class_Control;
+typedef struct UI_Class_ColorCtrl UI_Class_ColorCtrl;
 
-struct UI_Class_Control
+struct UI_Class_ColorCtrl
 	: UI_Class
-	, Singleton<UI_Class_Control>
+	, Singleton<UI_Class_ColorCtrl>
 {
-	UI_Class_Control();
+	UI_Class_ColorCtrl();
 
-	~UI_Class_Control();
+	~UI_Class_ColorCtrl();
 
 	virtual UI_Control *Construct();
 
@@ -30,6 +30,15 @@ struct UI_Class_Control
 	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Control *ctrl);
 
 	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Control *ctrl);
+
+	VkPipeline pipeline;
+
+	vk::GraphicsPipeline *graphicsPipeline;
+
+	// Vertex Buffer
+	VkBuffer vertexBufferObject;
+	VkDeviceMemory vertexBufferMemory;
+	VkDescriptorBufferInfo vertexBufferInfo;
 #endif
 };
 

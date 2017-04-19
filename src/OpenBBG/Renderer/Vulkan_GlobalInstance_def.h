@@ -650,6 +650,10 @@ inline
 void
 GlobalInstance::UpdateMVP()
 {
+#if 1
+	Projection = glm::ortho(0.f, static_cast<float>(width), static_cast<float>(height), 0.f);
+	View = glm::mat4(1.0f);
+#else
 	float fov = glm::radians(45.0f);
 	if (width > height)
 		fov *= static_cast<float>(height) / static_cast<float>(width);
@@ -658,6 +662,7 @@ GlobalInstance::UpdateMVP()
 							glm::vec3(0, 0, 0),     // and looks at the origin
 							glm::vec3(0, -1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
 							);
+#endif
 	Model = glm::mat4(1.0f);
 
 	// Vulkan clip space has inverted Y and half Z.

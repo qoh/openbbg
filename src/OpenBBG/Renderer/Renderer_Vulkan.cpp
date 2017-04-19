@@ -98,8 +98,8 @@ void Renderer_Vulkan::Render()
 
 	{
 		VkClearValue clear_values[2];
-		clear_values[0].color.float32[0] = fmod((float)glfwGetTime(), 1.f);
-//		clear_values[0].color.float32[0] = 0.2f;
+//		clear_values[0].color.float32[0] = fmod((float)glfwGetTime(), 1.f);
+		clear_values[0].color.float32[0] = 0.2f;
 		clear_values[0].color.float32[1] = 0.2f;
 		clear_values[0].color.float32[2] = 0.2f;
 		clear_values[0].color.float32[3] = 0.2f;
