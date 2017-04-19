@@ -182,7 +182,6 @@ void Renderer_Vulkan::Init()
 
 	//--------------------------
 
-	init_uniform_buffer(global, info);
 	init_vertex_buffer(global, info, g_vb_solid_face_colors_Data, sizeof(g_vb_solid_face_colors_Data),
 					   sizeof(g_vb_solid_face_colors_Data[0]), false);
 	init_descriptor_pool(global, info, false);
@@ -222,13 +221,9 @@ void Renderer_Vulkan::ResizeFramebuffer(int x, int y)
 	global.renderNode->CreateSwapchainViews(global.device, global.swapchain);
 	global.renderNode->CreateImagesAndViews(global.device, global.physicalDevices[0], global.deviceMemoryProperties);
 	global.renderNode->CreateFramebuffers(global.device);
-
-	// Uniform Buffer & Descriptor Set
-//	vkDestroyBuffer(global.device, info.uniform_data.buf, NULL);
-//	vkFreeMemory(global.device, info.uniform_data.mem, NULL);
-//	vkFreeDescriptorSets(global.device, info.desc_pool, (uint32_t)info.desc_set.size(), info.desc_set.data());
-//	init_uniform_buffer(global, info);
-//	init_descriptor_set(global, info, graphicsPipeline, false);
+	
+	global.UpdateMVP();
+	global.UploadGlobalParamsBuffer();
 }
 
 void Renderer_Vulkan::Render()
@@ -300,8 +295,6 @@ void Renderer_Vulkan::Render()
 
 		vkCmdBeginRenderPass(global.primaryCommandPool.currentBuffer, &rp_begin, VK_SUBPASS_CONTENTS_INLINE);
 
-		//----------------------------------------------
-		
 		init_viewports(global, info);
 		init_scissors(global, info);
 
@@ -404,10 +397,6 @@ void Renderer_Vulkan::Destroy()
 	// Vertex Buffer
 	vkDestroyBuffer(global.device, info.vertex_buffer.buf, NULL);
 	vkFreeMemory(global.device, info.vertex_buffer.mem, NULL);
-
-	// Uniform Buffer
-	vkDestroyBuffer(global.device, info.uniform_data.buf, NULL);
-	vkFreeMemory(global.device, info.uniform_data.mem, NULL);
 
 	//----------------------
 

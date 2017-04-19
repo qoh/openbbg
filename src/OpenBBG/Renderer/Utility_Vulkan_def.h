@@ -22,37 +22,5 @@ GetMemoryTypeFromProperties(VkPhysicalDeviceMemoryProperties &deviceMemoryProper
     return false;
 }
 
-inline
-bool
-CreateBufferObject(vk::GlobalInstance &global, VkDeviceSize size, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags, VkBuffer &bufferObject, VkDeviceMemory &bufferMemory, VkMemoryRequirements *memReqReturn)
-{
-	// TODO: Populate error messages
-
-	VkBufferCreateInfo bufferCreateInfo = {};
-	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.size = size;
-	bufferCreateInfo.usage = usageFlags;
-	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	if (VK_SUCCESS != vkCreateBuffer(global.device, &bufferCreateInfo, nullptr, &bufferObject))
-		return false;
-
-	VkMemoryRequirements memReq;
-	vkGetBufferMemoryRequirements(global.device, bufferObject, &memReq);
-	if (memReqReturn != nullptr)
-		memcpy(memReqReturn, &memReq, sizeof(memReq));
-
-	VkMemoryAllocateInfo allocateInfo = {};
-	allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocateInfo.allocationSize = memReq.size;
-	if (false == GetMemoryTypeFromProperties(global.deviceMemoryProperties, memReq.memoryTypeBits, propertyFlags, &allocateInfo.memoryTypeIndex))
-		return false;
-	if (VK_SUCCESS != vkAllocateMemory(global.device, &allocateInfo, nullptr, &bufferMemory))
-		return false;
-	if (VK_SUCCESS != vkBindBufferMemory(global.device, bufferObject, bufferMemory, 0))
-		return false;
-
-	return true;
-}
-
 }
 #endif

@@ -493,6 +493,9 @@ GlobalInstance::Init(const char *appSimpleName, GLFWwindow *window)
 	// Create RenderPass
 #endif
 
+	assert(CreateGlobalBuffers());
+	assert(CreateGlobalDescriptorPoolsAndSets());
+
 	isInitialized = true;
 	return true;
 }
@@ -510,6 +513,25 @@ GlobalInstance::Cleanup()
 		renderNode = nullptr;
 	}
 
+	//----------------------------
+	
+	vkFreeDescriptorSets(device, descGlobalParamPool, (uint32_t)descGlobalParamSets.size(), descGlobalParamSets.data());
+
+	vkDestroyDescriptorPool(device, descGlobalParamPool, nullptr);
+
+	vkDestroyDescriptorSetLayout(device, descGlobalParamLayout, nullptr);
+
+	//----------------------------
+
+	// Global Buffers
+	
+	vkDestroyBuffer(device, globalParamBufferObject, nullptr);
+
+	vkFreeMemory(device, globalParamBufferMemory, nullptr);
+
+
+	//---------------------------
+
 		
 	vkDestroyPipelineCache(device, pipelineCache, nullptr);
 
@@ -524,6 +546,165 @@ GlobalInstance::Cleanup()
 	vkDestroyInstance(instance, nullptr);
 
 	isInitialized = false;
+}
+
+inline
+bool
+GlobalInstance::CreateBufferObject(VkDeviceSize size, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags, VkBuffer &bufferObject, VkDeviceMemory &bufferMemory, VkMemoryRequirements *memReqReturn)
+{
+	// TODO: Populate error messages
+
+	VkBufferCreateInfo bufferCreateInfo = {};
+	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferCreateInfo.size = size;
+	bufferCreateInfo.usage = usageFlags;
+	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	if (VK_SUCCESS != vkCreateBuffer(device, &bufferCreateInfo, nullptr, &bufferObject))
+		return false;
+
+	VkMemoryRequirements memReq;
+	vkGetBufferMemoryRequirements(device, bufferObject, &memReq);
+	if (memReqReturn != nullptr)
+		memcpy(memReqReturn, &memReq, sizeof(memReq));
+
+	VkMemoryAllocateInfo allocateInfo = {};
+	allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocateInfo.allocationSize = memReq.size;
+	if (false == GetMemoryTypeFromProperties(deviceMemoryProperties, memReq.memoryTypeBits, propertyFlags, &allocateInfo.memoryTypeIndex))
+		return false;
+	if (VK_SUCCESS != vkAllocateMemory(device, &allocateInfo, nullptr, &bufferMemory))
+		return false;
+	if (VK_SUCCESS != vkBindBufferMemory(device, bufferObject, bufferMemory, 0))
+		return false;
+
+	return true;
+}
+
+inline
+bool
+GlobalInstance::CreateGlobalBuffers()
+{
+	assert(CreateBufferObject(
+		sizeof(glm::mat4),
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		globalParamBufferObject,
+		globalParamBufferMemory,
+		nullptr));
+	
+	globalParamBufferInfo = {
+		globalParamBufferObject,
+		0,
+		sizeof(glm::mat4)
+	};
+
+	UpdateMVP();
+	UploadGlobalParamsBuffer();
+
+	return true;
+}
+
+inline
+void
+GlobalInstance::UpdateMVP()
+{
+	float fov = glm::radians(45.0f);
+	if (width > height)
+		fov *= static_cast<float>(height) / static_cast<float>(width);
+	Projection = glm::perspective(fov, static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+	View = glm::lookAt(glm::vec3(-5, 3, -10),  // Camera is at (-5,3,-10), in World Space
+							glm::vec3(0, 0, 0),     // and looks at the origin
+							glm::vec3(0, -1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
+							);
+	Model = glm::mat4(1.0f);
+
+	// Vulkan clip space has inverted Y and half Z.
+	Clip = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+
+	MVP = Clip * Projection * View * Model;
+}
+
+inline
+void
+GlobalInstance::UploadGlobalParamsBuffer()
+{
+	VkMemoryRequirements memReqs;
+	vkGetBufferMemoryRequirements(device, globalParamBufferObject, &memReqs);
+
+	uint8_t *pData;
+	VkResult res = vkMapMemory(device, globalParamBufferMemory, 0, memReqs.size, 0, (void **)&pData);
+	assert(res == VK_SUCCESS);
+
+	memcpy(pData, &MVP, sizeof(MVP));
+
+	vkUnmapMemory(device, globalParamBufferMemory);
+}
+
+inline
+bool
+GlobalInstance::CreateGlobalDescriptorPoolsAndSets()
+{
+	VkResult res;
+
+	// Global Params
+	{
+		VkDescriptorSetLayoutBinding descSetLayoutBinding {
+			0,
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			1,
+			VK_SHADER_STAGE_VERTEX_BIT,
+			nullptr
+		};
+
+		VkDescriptorSetLayoutCreateInfo descSetLayoutCreateInfo;
+		descSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		descSetLayoutCreateInfo.pNext = nullptr;
+		descSetLayoutCreateInfo.flags = 0;
+		descSetLayoutCreateInfo.bindingCount = 1;
+		descSetLayoutCreateInfo.pBindings = &descSetLayoutBinding;
+
+		res = vkCreateDescriptorSetLayout(device, &descSetLayoutCreateInfo, nullptr, &descGlobalParamLayout);
+		assert(res == VK_SUCCESS);
+
+		VkDescriptorPoolSize descPoolSize;
+		descPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descPoolSize.descriptorCount = 1;
+
+		VkDescriptorPoolCreateInfo descPoolCreateInfo = {};
+		descPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		descPoolCreateInfo.pNext = nullptr;
+		descPoolCreateInfo.maxSets = 1;
+		descPoolCreateInfo.poolSizeCount = 1;
+		descPoolCreateInfo.pPoolSizes = &descPoolSize;
+
+		res = vkCreateDescriptorPool(device, &descPoolCreateInfo, nullptr, &descGlobalParamPool);
+		assert(res == VK_SUCCESS);
+
+		VkDescriptorSetAllocateInfo descSetAllocateInfo;
+		descSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descSetAllocateInfo.pNext = nullptr;
+		descSetAllocateInfo.descriptorPool = descGlobalParamPool;
+		descSetAllocateInfo.descriptorSetCount = 1;
+		descSetAllocateInfo.pSetLayouts = &descGlobalParamLayout;
+
+		descGlobalParamSets.resize(1);
+		res = vkAllocateDescriptorSets(device, &descSetAllocateInfo, descGlobalParamSets.data());
+		assert(res == VK_SUCCESS);
+
+		VkWriteDescriptorSet writeDescSet = {};
+		writeDescSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescSet.pNext = nullptr;
+		writeDescSet.dstSet = descGlobalParamSets[0];
+		writeDescSet.descriptorCount = 1;
+		writeDescSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescSet.pBufferInfo = &globalParamBufferInfo;
+		writeDescSet.dstArrayElement = 0;
+		writeDescSet.dstBinding = 0;
+
+		vkUpdateDescriptorSets(device, 1, &writeDescSet, 0, nullptr);
+	}
+
+	return true;
 }
 
 }

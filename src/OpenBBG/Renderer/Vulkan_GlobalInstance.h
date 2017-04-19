@@ -48,7 +48,13 @@ struct GlobalInstance
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
 	VkSwapchainCreateInfoKHR swapchainCreateInfo;
 
+	// Global Buffers
+	VkBuffer globalParamBufferObject;
+	VkDeviceMemory globalParamBufferMemory;
+	VkDescriptorBufferInfo globalParamBufferInfo;
+
 	// Global Descriptor Sets
+	VkDescriptorSetLayout descGlobalParamLayout;
     VkDescriptorPool descGlobalParamPool;
     vector<VkDescriptorSet> descGlobalParamSets;
 
@@ -75,6 +81,35 @@ struct GlobalInstance
 	bool CreateSwapChain(VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 	
 	bool CreatePipelineCache();
+	
+
+	//- Global Buffers -
+	
+    glm::mat4 Projection;
+    
+	glm::mat4 View;
+    
+	glm::mat4 Model;
+    
+	glm::mat4 Clip;
+
+	glm::mat4 MVP;
+
+	bool CreateGlobalBuffers();
+
+	void UpdateMVP();
+
+	void UploadGlobalParamsBuffer();
+
+
+	//- Global Descriptor Pools & Sets -
+
+	bool CreateGlobalDescriptorPoolsAndSets();
+
+
+	//- Utility Functions -
+
+	bool CreateBufferObject(VkDeviceSize size, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags, VkBuffer &bufferObject, VkDeviceMemory &bufferMemory, VkMemoryRequirements *memReqReturn = nullptr);
 
 
 	//------------------------------------------------------------------------------
