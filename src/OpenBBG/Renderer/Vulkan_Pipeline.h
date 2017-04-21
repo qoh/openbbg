@@ -137,8 +137,10 @@ struct GraphicsPipeline
 		VkResult res;
 
 		desc_layout.resize(numDescriptorSetLayouts);
-		res = vkCreateDescriptorSetLayout(device, descriptorSetLayoutCreateInfos.data(), nullptr, desc_layout.data());
-		assert(res == VK_SUCCESS);
+		for (uint32_t a = 0; a < numDescriptorSetLayouts; ++a) {
+			res = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfos[a], nullptr, &desc_layout[a]);
+			assert(res == VK_SUCCESS);
+		}
 
 		VkPipelineLayoutCreateInfo pPipelineLayoutCreateInfo = {};
 		pPipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -148,7 +150,7 @@ struct GraphicsPipeline
 		pPipelineLayoutCreateInfo.setLayoutCount = numDescriptorSetLayouts;
 		pPipelineLayoutCreateInfo.pSetLayouts = desc_layout.data();
 
-		res = vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, NULL, &pipeline_layout);
+		res = vkCreatePipelineLayout(device, &pPipelineLayoutCreateInfo, nullptr, &pipeline_layout);
 		assert(res == VK_SUCCESS);
 
 		return true;
@@ -178,7 +180,7 @@ struct GraphicsPipeline
 			moduleCreateInfo.codeSize = spvCode.size() * sizeof(unsigned int);
 			moduleCreateInfo.pCode = spvCode.data();
 
-			res = vkCreateShaderModule(device, &moduleCreateInfo, NULL, &shaderStage.module);
+			res = vkCreateShaderModule(device, &moduleCreateInfo, nullptr, &shaderStage.module);
 			assert(res == VK_SUCCESS);
 		}
 

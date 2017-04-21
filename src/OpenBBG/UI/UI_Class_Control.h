@@ -23,6 +23,10 @@ struct UI_Class_Control
 
 	virtual void Cleanup(Renderer_Vulkan *r);
 
+	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx);
+
+	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl);
+
 	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx);
 
 	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl);

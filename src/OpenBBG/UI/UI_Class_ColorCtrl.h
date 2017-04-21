@@ -23,6 +23,10 @@ struct UI_Class_ColorCtrl
 
 	virtual void Cleanup(Renderer_Vulkan *r);
 
+	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx);
+
+	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl);
+
 	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx);
 
 	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl);
@@ -36,6 +40,50 @@ struct UI_Class_ColorCtrl
 	VkPipeline pipeline;
 
 	vk::GraphicsPipeline *graphicsPipeline;
+
+	// Local Data
+	typedef struct LocalDataEntry
+	{
+		glm::vec2 position;
+		glm::vec2 extent;
+		glm::vec4 color;
+		glm::vec4 scissor;
+		glm::vec2 hz;
+	} LocalDataEntry;
+
+	vector<LocalDataEntry> entries;
+
+	typedef struct LocalData {
+		VkDrawIndirectCommand indirectCommand;
+
+		VkBuffer indirectBufferObject;
+		VkDeviceMemory indirectBufferMemory;
+		VkDescriptorBufferInfo indirectBufferInfo;
+		VkBuffer indirectStagingBufferObject;
+		VkDeviceMemory indirectStagingBufferMemory;
+		VkDescriptorBufferInfo indirectStagingBufferInfo;
+
+		VkBuffer localBufferObject;
+		VkDeviceMemory localBufferMemory;
+		VkDescriptorBufferInfo localBufferInfo;
+		VkBuffer localStagingBufferObject;
+		VkDeviceMemory localStagingBufferMemory;
+		VkDescriptorBufferInfo localStagingBufferInfo;
+
+		VkDescriptorSetLayout descLocalLayout;
+		VkDescriptorPool descLocalPool;
+		vector<VkDescriptorSet> descLocalSets;
+	} LocalData;
+
+	map<UI_Context *, LocalData> localDataMap;
+
+	void CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx);
+	void UploadLocalData(Renderer_Vulkan *r, LocalData &data);
+
+	// Instance Buffer
+	VkBuffer instanceBufferObject;
+	VkDeviceMemory instanceBufferMemory;
+	VkDescriptorBufferInfo instanceBufferInfo;
 
 	// Vertex Buffer
 	VkBuffer vertexBufferObject;

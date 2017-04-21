@@ -20,14 +20,12 @@ struct Renderer_Vulkan
 
 	bool isFirstFrame;
 	
-	// TEMP - Frame Time Logging (No VSync)
-#if !OPENBBG_VULKAN_VSYNC
+	// TEMP - Frame Time Logging
 	TimeValue frameStart;
 	TimeValue frameQueue;
 	TimeValue frameEnd;
 	AverageLog frameCPULog;
 	AverageLog frameGPULog;
-#endif
 
 	Renderer_Vulkan(Window *window);
 

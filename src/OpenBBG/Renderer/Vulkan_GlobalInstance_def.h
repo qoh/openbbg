@@ -112,7 +112,7 @@ GlobalInstance::InitSwapChainExtension(GLFWwindow *glfwWindow)
 	createInfo.pNext = nullptr;
 	createInfo.connection = connection;
 	createInfo.window = window;
-	res = vkCreateXcbSurfaceKHR(instance, &createInfo, NULL, &surface);
+	res = vkCreateXcbSurfaceKHR(instance, &createInfo, nullptr, &surface);
 #endif
 	assert(res == VK_SUCCESS);
 
@@ -320,6 +320,7 @@ bool
 GlobalInstance::DestroySwapChain()
 {
 	vkDestroySwapchainKHR(device, swapchain, nullptr);
+	return true;
 }
 
 
@@ -346,7 +347,6 @@ GlobalInstance::Init(const char *appSimpleName, GLFWwindow *window)
 
 
 
-#if 1
 	renderNode = new RenderNode(1, numSwapchainImages, true);
 	renderNode->SetAttachments({
 		// Back Buffer
@@ -422,78 +422,6 @@ GlobalInstance::Init(const char *appSimpleName, GLFWwindow *window)
 	assert(renderNode->CreateSwapchainViews(device, swapchain));
 	assert(renderNode->CreateImagesAndViews(device, physicalDevices[0], deviceMemoryProperties));
 	assert(renderNode->CreateFramebuffers(device));
-#else
-	renderNode = new RenderNode({
-		// Back Buffer
-		{
-			{
-				0,
-				VK_FORMAT_R8G8B8A8_UNORM,
-				VK_SAMPLE_COUNT_1_BIT,
-				VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				VK_ATTACHMENT_STORE_OP_STORE,
-				VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-			}, {
-				0,
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-			}, {
-				0,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-			}
-		},
-
-		// Depth Buffer
-		{
-			{
-				0,
-				VK_FORMAT_D32_SFLOAT,
-				VK_SAMPLE_COUNT_1_BIT,
-				VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_UNDEFINED
-			}, {
-				1,
-				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-			}, {
-				1,
-				VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-			}
-		},
-
-		// G-Buffer 1
-		{
-			{
-				0,
-				VK_FORMAT_R32G32B32A32_UINT,
-				VK_SAMPLE_COUNT_1_BIT,
-				VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_UNDEFINED
-			}, {
-				2,
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-			}, {
-				2,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-			}
-		},
-	}, 1);
-
-
-	// Subpass Descs
-	// Subpass Deps
-	// RenderPassCreateInfo
-	// Create RenderPass
-#endif
 
 	assert(CreateGlobalBuffers());
 	assert(CreateGlobalDescriptorPoolsAndSets());
@@ -560,7 +488,7 @@ GlobalInstance::Cleanup()
 	primaryCommandPool.Cleanup();
 
 	vkDestroyDevice(device, nullptr);
-		
+
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 
 	vkDestroyInstance(instance, nullptr);

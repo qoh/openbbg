@@ -22,10 +22,8 @@ Renderer_Vulkan::Renderer_Vulkan(Window *window)
 	: window { window }
 	, isInitialized { false }
 	, isFirstFrame { true }
-#if !OPENBBG_VULKAN_VSYNC
 	, frameCPULog { 1000.f }
 	, frameGPULog { 1000.f }
-#endif
 {
 	Init();
 }
@@ -73,8 +71,7 @@ void Renderer_Vulkan::ResizeFramebuffer(int x, int y)
 
 void Renderer_Vulkan::Render()
 {
-	// TEMP - Frame Time Logging (No VSync)
-#if !OPENBBG_VULKAN_VSYNC
+	// TEMP - Frame Time Logging
 	if (isFirstFrame == false) {
 		GetTime(frameEnd);
 		frameCPULog.Push(GetTimeDurationMS(frameStart, frameQueue));
@@ -84,7 +81,6 @@ void Renderer_Vulkan::Render()
 		}
 	}
 	GetTime(frameStart);
-#endif
 
 	VkResult res;
 
@@ -161,10 +157,8 @@ void Renderer_Vulkan::Render()
 		submit_info[0].signalSemaphoreCount = 0;
 		submit_info[0].pSignalSemaphores = nullptr;
 		
-		// TEMP - Frame Time Logging (No VSync)
-#if !OPENBBG_VULKAN_VSYNC
+		// TEMP - Frame Time Logging
 		GetTime(frameQueue);
-#endif
 
 		/* Queue the command buffer for execution */
 		res = vkQueueSubmit(global.graphicsQueues[0], 1, submit_info, global.drawFence);
@@ -204,6 +198,96 @@ void Renderer_Vulkan::Destroy()
 {
 	if (isInitialized == false)
 		return;
+	
+	VkResult res;
+
+	// Present empty frame
+	{
+		// Build Command Buffer
+		global.primaryCommandPool.BeginCurrentBuffer();
+
+		Game::Get()->jobsFrameStart.ProcessAllCurrent();
+
+		assert(VK_SUCCESS == vkAcquireNextImageKHR(global.device, global.swapchain, UINT64_MAX, global.imageAcquiredSemaphore, VK_NULL_HANDLE, &global.currentSwapchainBufferIdx));
+
+		Game::Get()->jobsFrameEnd.ProcessAllCurrent();
+
+		global.primaryCommandPool.EndCurrentBuffer();
+
+		// Queue commands
+		{
+			const VkCommandBuffer cmd_bufs[] = { global.primaryCommandPool.currentBuffer };
+
+			VkPipelineStageFlags pipe_stage_flags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			VkSubmitInfo submit_info[1] = {};
+			submit_info[0].pNext = nullptr;
+			submit_info[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			submit_info[0].waitSemaphoreCount = 1;
+			submit_info[0].pWaitSemaphores = &global.imageAcquiredSemaphore;
+			submit_info[0].pWaitDstStageMask = &pipe_stage_flags;
+			submit_info[0].commandBufferCount = 1;
+			submit_info[0].pCommandBuffers = cmd_bufs;
+			submit_info[0].signalSemaphoreCount = 0;
+			submit_info[0].pSignalSemaphores = nullptr;
+
+			/* Queue the command buffer for execution */
+			res = vkQueueSubmit(global.graphicsQueues[0], 1, submit_info, global.drawFence);
+			assert(res == VK_SUCCESS);
+
+			/* Now present the image in the window */
+
+			VkPresentInfoKHR present;
+			present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+			present.pNext = nullptr;
+			present.swapchainCount = 1;
+			present.pSwapchains = &global.swapchain;
+			present.pImageIndices = &global.currentSwapchainBufferIdx;
+			present.pWaitSemaphores = nullptr;
+			present.waitSemaphoreCount = 0;
+			present.pResults = nullptr;
+
+			do {
+				res = vkWaitForFences(global.device, 1, &global.drawFence, VK_TRUE, FENCE_TIMEOUT);
+			} while (res == VK_TIMEOUT);
+
+			assert(res == VK_SUCCESS);
+			res = vkQueuePresentKHR(global.presentQueue, &present);
+			assert(res == VK_SUCCESS);
+		}
+	}
+
+
+
+
+	// Build Command Buffer
+	global.primaryCommandPool.BeginCurrentBuffer();
+
+	if (g_masterContext != nullptr)
+		g_masterContext->Cleanup(this);
+	UI_Class::CleanupAll(this);
+
+	global.primaryCommandPool.EndCurrentBuffer();
+
+	// Queue commands
+	{
+		const VkCommandBuffer cmd_bufs[] = { global.primaryCommandPool.currentBuffer };
+
+		VkPipelineStageFlags pipe_stage_flags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+		VkSubmitInfo submit_info[1] = {};
+		submit_info[0].pNext = nullptr;
+		submit_info[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info[0].pWaitDstStageMask = &pipe_stage_flags;
+		submit_info[0].commandBufferCount = 1;
+		submit_info[0].pCommandBuffers = cmd_bufs;
+
+		/* Queue the command buffer for execution */
+		res = vkQueueSubmit(global.graphicsQueues[0], 1, submit_info, global.drawFence);
+		assert(res == VK_SUCCESS);
+
+		do {
+			res = vkWaitForFences(global.device, 1, &global.drawFence, VK_TRUE, FENCE_TIMEOUT);
+		} while (res == VK_TIMEOUT);
+	}
 
 	// Cleanup global instance
 	global.Cleanup();

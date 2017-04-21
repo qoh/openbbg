@@ -81,6 +81,9 @@
 				UI_Classes.h
 				UI_Component.cpp
 				UI_Component.h
+				UI_Component_def.h
+				UI_Component_ColorQuad.cpp
+				UI_Component_ColorQuad.h
 				UI_Context.cpp
 				UI_Context.h
 				UI_Context_def.h

@@ -45,6 +45,16 @@ UI_Class_Control::Cleanup(Renderer_Vulkan *r)
 }
 
 void
+UI_Class_Control::Cleanup(Renderer_Vulkan *r, UI_Context *ctx)
+{
+}
+
+void
+UI_Class_Control::Cleanup(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl)
+{
+}
+
+void
 UI_Class_Control::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
 {
 	if (isInitialized == false)

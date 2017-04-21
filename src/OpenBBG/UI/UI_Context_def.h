@@ -102,6 +102,18 @@ UI_Context::Render(Renderer_Vulkan *r)
 		for (auto ctrl : uiClass->controls[this])
 			uiClass->RenderOverlay(r, this, ctrl);
 }
+
+inline
+void
+UI_Context::Cleanup(Renderer_Vulkan *r)
+{
+	// Cleanup
+	for (auto uiClass : classes) {
+		for (auto ctrl : uiClass->controls[this])
+			uiClass->Cleanup(r, this, ctrl);
+		uiClass->Cleanup(r, this);
+	}
+}
 #endif
 
 }

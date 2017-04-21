@@ -9,6 +9,7 @@ namespace openbbg {
 typedef struct UI_Class UI_Class;
 typedef struct UI_Context UI_Context;
 typedef struct UI_Control UI_Control;
+typedef struct UI_Component UI_Component;
 typedef struct UI_ScissorRule UI_ScissorRule;
 
 struct UI_ScissorRule
@@ -81,6 +82,11 @@ struct UI_Control : TreeNode<UI_Control>
 	UI_ScissorRule *scissor { nullptr };
 
 	
+	//------------------------ Components -----------------------
+
+	vector<UI_Component *> components;
+
+
 	//------------------------ Temp ---------------------------
 
 	glm::vec4 color;
