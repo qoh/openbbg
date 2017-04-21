@@ -20,32 +20,11 @@ struct UI_Class
 
 	virtual ~UI_Class();
 
-	uint32_t isInitialized : 1;
-
 	map<UI_Context *, deque<UI_Control *>> controls;
-
-	map<UI_Context *, deque<UI_Control *>> controlsOpaque;
-
-	map<UI_Context *, deque<UI_Control *>> controlsTransparent;
-
-	map<UI_Context *, deque<UI_Control *>> controlsOverlay;
 
 	static vector<UI_Class *> s_classes;
 
 	virtual UI_Control *Construct() = 0;
-	
-#if OPENBBG_WITH_VULKAN
-	virtual void Init(Renderer_Vulkan *r) = 0;
-	virtual void Cleanup(Renderer_Vulkan *r) = 0;
-	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx) = 0;
-	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl) = 0;
-	static void CleanupAll(Renderer_Vulkan *r);
-	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx) = 0;
-	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl) = 0;
-	virtual void RenderOpaque(Renderer_Vulkan *r, UI_Context *ctx) = 0;
-	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl) = 0;
-	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl) = 0;
-#endif
 };
 
 }

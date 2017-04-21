@@ -12,6 +12,7 @@ namespace openbbg {
 typedef struct UI_Class UI_Class;
 typedef struct UI_Context UI_Context;
 typedef struct UI_Control UI_Control;
+typedef struct UI_Component UI_Component;
 
 struct UI_Context
 {
@@ -48,6 +49,8 @@ struct UI_Context
 	//--------------------------------------
 
 	deque<UI_Class *> classes;
+
+	deque<UI_Component *> components;
 
 	void SetRoot(UI_Control *ctrl);
 

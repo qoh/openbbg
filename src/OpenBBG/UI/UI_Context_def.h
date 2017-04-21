@@ -3,6 +3,7 @@
 
 // OpenBBG
 #include <OpenBBG/UI/UI_Control.h>
+#include <OpenBBG/UI/UI_Component.h>
 #include <OpenBBG/UI/UI_Class.h>
 
 namespace openbbg {
@@ -75,10 +76,10 @@ void
 UI_Context::Prepare(Renderer_Vulkan *r)
 {
 	// Prepare
-	for (auto uiClass : classes) {
-		uiClass->Prepare(r, this);
-		for (auto ctrl : uiClass->controls[this])
-			uiClass->Prepare(r, this, ctrl);
+	for (auto uiComponent : components) {
+		uiComponent->Prepare(r, this);
+		for (auto compInst : uiComponent->componentInstances[this])
+			uiComponent->Prepare(r, this, compInst);
 	}
 }
 
@@ -86,21 +87,23 @@ inline
 void
 UI_Context::Render(Renderer_Vulkan *r)
 {
+	// TODO: Properly distinguish the different groups of renderables
+
 	// Render all opaque
-	for (auto uiClass : classes)
-		uiClass->RenderOpaque(r, this);
+	for (auto uiComponent : components)
+		uiComponent->RenderOpaque(r, this);
 
 	// Render all transparent
-	for (auto uiClass : classes)
-		for (auto ctrl : uiClass->controls[this])
-			uiClass->RenderTransparent(r, this, ctrl);
+	for (auto uiComponent : components)
+		for (auto compInst : uiComponent->componentInstances[this])
+			uiComponent->RenderTransparent(r, this, compInst);
 
 	// Clear depth
 
 	// Render all overlay
-	for (auto uiClass : classes)
-		for (auto ctrl : uiClass->controls[this])
-			uiClass->RenderOverlay(r, this, ctrl);
+	for (auto uiComponent : components)
+		for (auto compInst : uiComponent->componentInstances[this])
+			uiComponent->RenderOverlay(r, this, compInst);
 }
 
 inline
@@ -108,10 +111,10 @@ void
 UI_Context::Cleanup(Renderer_Vulkan *r)
 {
 	// Cleanup
-	for (auto uiClass : classes) {
-		for (auto ctrl : uiClass->controls[this])
-			uiClass->Cleanup(r, this, ctrl);
-		uiClass->Cleanup(r, this);
+	for (auto uiComponent : components) {
+		for (auto compInst : uiComponent->componentInstances[this])
+			uiComponent->Cleanup(r, this, compInst);
+		uiComponent->Cleanup(r, this);
 	}
 }
 #endif

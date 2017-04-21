@@ -17,26 +17,6 @@ struct UI_Class_Control
 	~UI_Class_Control();
 
 	virtual UI_Control *Construct();
-
-#if OPENBBG_WITH_VULKAN
-	virtual void Init(Renderer_Vulkan *r);
-
-	virtual void Cleanup(Renderer_Vulkan *r);
-
-	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx);
-
-	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl);
-
-	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx);
-
-	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl);
-
-	virtual void RenderOpaque(Renderer_Vulkan *r, UI_Context *ctx);
-
-	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl);
-
-	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Context *ctx, UI_Control *ctrl);
-#endif
 };
 
 }

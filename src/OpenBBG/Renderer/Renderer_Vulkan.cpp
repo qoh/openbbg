@@ -264,7 +264,7 @@ void Renderer_Vulkan::Destroy()
 
 	if (g_masterContext != nullptr)
 		g_masterContext->Cleanup(this);
-	UI_Class::CleanupAll(this);
+	UI_Component::CleanupAll(this);
 
 	global.primaryCommandPool.EndCurrentBuffer();
 

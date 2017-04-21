@@ -84,6 +84,7 @@
 				UI_Component_def.h
 				UI_Component_ColorQuad.cpp
 				UI_Component_ColorQuad.h
+				UI_Components.h
 				UI_Context.cpp
 				UI_Context.h
 				UI_Context_def.h

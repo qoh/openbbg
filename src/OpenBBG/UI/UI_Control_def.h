@@ -4,6 +4,7 @@
 // OpenBBG
 #include <OpenBBG/UI/UI_Context.h>
 #include <OpenBBG/UI/UI_Class.h>
+#include <OpenBBG/UI/UI_Component.h>
 
 namespace openbbg {
 
@@ -18,6 +19,9 @@ UI_Control::UI_Control()
 inline
 UI_Control::~UI_Control()
 {
+	for (auto compInst : componentInstances)
+		delete compInst;
+
 	DeleteChildren();
 }
 
@@ -26,12 +30,16 @@ void
 UI_Control::OnChildAdded(UI_Control *child)
 {
 	child->context = context;
+	if (context != nullptr)
+		child->AddToContext();
 }
 
 inline
 void
 UI_Control::OnChildRemoved(UI_Control *child)
 {
+	if (context != nullptr)
+		child->RemoveFromContext();
 	child->context = nullptr;
 }
 
@@ -50,6 +58,14 @@ UI_Control::AddToContext()
 		context->classes.push_back(uiClass);
 	controls.push_back(this);
 
+	// Add components
+	for (auto compInst : componentInstances) {
+		auto &compInsts = compInst->component->componentInstances[context];
+		if (compInsts.empty())
+			context->components.push_back(compInst->component);
+		compInsts.push_back(compInst);
+	}
+
 	for (auto child : children)
 		child->AddToContext();
 }
@@ -64,6 +80,17 @@ UI_Control::RemoveFromContext()
 		auto &classes = context->classes;
 		classes.erase(find(classes.begin(), classes.end(), uiClass));
 		uiClass->controls.erase(context);
+	}
+
+	// Remove components
+	for (auto compInst : componentInstances) {
+		auto &compInsts = compInst->component->componentInstances[context];
+		compInsts.erase(find(compInsts.begin(), compInsts.end(), compInst));
+		if (compInsts.empty()) {
+			auto &components = context->components;
+			components.erase(find(components.begin(), components.end(), compInst->component));
+			compInst->component->componentInstances.erase(context);
+		}
 	}
 
 	for (auto child : children)

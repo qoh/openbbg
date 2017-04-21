@@ -10,6 +10,7 @@
 #include <cassert>
 #include <inttypes.h>
 
+#include <limits>
 #include <thread>
 //#include <fstream>
 #include <mutex>
