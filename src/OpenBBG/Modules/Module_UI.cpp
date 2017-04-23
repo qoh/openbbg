@@ -7,6 +7,7 @@
 #include <OpenBBG/UI/UI_Context.h>
 #include <OpenBBG/UI/UI_Control.h>
 #include <OpenBBG/UI/UI_Classes.h>
+#include <OpenBBG/UI/UI_Components.h>
 
 namespace openbbg {
 
@@ -19,6 +20,10 @@ bool Module_UI::ModuleInit(Game *game)
 #if 1
 	UI_Context *ctx = new UI_Context();
 	UI_Control *root = UI_Class_ColorCtrl::Get()->Construct();
+	{
+		auto compInst = static_cast<UI_ComponentInstance_ColorQuad *>(root->componentInstances[0]);
+		compInst->color = { 0.5f, 1.f, 1.f, 1.f };
+	}
 	ctx->SetRoot(root);
 	g_masterContext = ctx;
 #endif

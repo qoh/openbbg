@@ -127,7 +127,7 @@ bool Module_Window::ModuleInit(Game *game)
 #endif
 
 #if OPENBBG_WITH_VULKAN
-	windows.push_back(Window::CreateVulkanWindow(640, 480, "Test Window"));
+	windows.push_back(Window::CreateVulkanWindow(1280, 720, "OpenBBG"));
 #endif
 
 	return true;

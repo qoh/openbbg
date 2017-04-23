@@ -21,6 +21,7 @@ struct UI_ComponentInstance
 	UI_Control *control;
 	uint64_t stageBufferOffset { std::numeric_limits<uint64_t>::max() };
 	bool isDirty { true };
+	bool isStageBufferOffsetDirty { true };
 
 	float zOffset;
 
@@ -38,6 +39,8 @@ struct UI_Component
 
 	uint32_t isInitialized : 1;
 
+	deque<UI_ComponentInstance *> sortUpdateCallbackList;
+
 	map<UI_Context *, deque<UI_ComponentInstance *>> componentInstances;
 
 	map<UI_Context *, deque<UI_ComponentInstance *>> componentInstancesOpaque;
@@ -49,6 +52,8 @@ struct UI_Component
 	static vector<UI_Component *> s_components;
 
 	virtual UI_ComponentInstance *Construct() = 0;
+
+	virtual void Deconstruct(UI_ComponentInstance *compInst) = 0;
 	
 #if OPENBBG_WITH_VULKAN
 	static void CleanupAll(Renderer_Vulkan *r);
@@ -62,6 +67,9 @@ struct UI_Component
 	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
 	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
 #endif
+
+	virtual void OnAddToContext(UI_ComponentInstance *compInst, UI_Context *ctx) = 0;
+	virtual void OnRemoveFromContext(UI_ComponentInstance *compInst, UI_Context *ctx) = 0;
 };
 
 }

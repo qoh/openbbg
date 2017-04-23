@@ -2,6 +2,7 @@
 
 // OpenBBG
 #include <OpenBBG/UI/UI_Component_ColorQuad.h>
+#include <OpenBBG/UI/UI_Control.h>
 
 namespace openbbg {
 	
@@ -22,15 +23,58 @@ UI_Component_ColorQuad::~UI_Component_ColorQuad()
 UI_ComponentInstance *
 UI_Component_ColorQuad::Construct()
 {
-	UI_ComponentInstance *compInst = new UI_ComponentInstance();
+	UI_ComponentInstance *compInst = new UI_ComponentInstance_ColorQuad();
 	compInst->component = this;
 	return compInst;
+}
+
+void
+UI_Component_ColorQuad::Deconstruct(UI_ComponentInstance *compInst)
+{
+	delete static_cast<UI_ComponentInstance_ColorQuad *>(compInst);
 }
 
 #if OPENBBG_WITH_VULKAN
 bool sortLocalData(UI_Component_ColorQuad::LocalDataEntry &a, UI_Component_ColorQuad::LocalDataEntry &b)
 {
-	return (a.color.a == 1.f && b.color.a == 1.f) ? (a.hz.x > b.hz.x) : ((a.color.a == 1.f) ? true : (a.hz.x < b.hz.x));
+	return (a.color.a == 1.f && b.color.a == 1.f) ? (a.hz.x > b.hz.x) : ((a.color.a == 1.f) ? true : ((b.color.a == 1.f) ? false : (a.hz.x < b.hz.x)));
+}
+
+bool sortLocalDataWithUpdate(UI_Component_ColorQuad::LocalDataEntry &a, UI_Component_ColorQuad::LocalDataEntry &b)
+{
+	bool res = (a.color.a == 1.f && b.color.a == 1.f) ? (a.hz.x > b.hz.x) : ((a.color.a == 1.f) ? true : ((b.color.a == 1.f) ? false : (a.hz.x < b.hz.x)));
+	if (res == true && a.compInst->stageBufferOffset > b.compInst->stageBufferOffset) {
+		// Right to Left
+		auto comp = dynamic_cast<UI_Component_ColorQuad *>(a.compInst->component);
+		auto context = a.compInst->control->context;
+		auto data = comp->localDataMap[context];
+		a.compInst->stageBufferOffset = (uint64_t)((&a - data.entries.data()) - 1);
+		b.compInst->stageBufferOffset = (uint64_t)((&b - data.entries.data()) + 1);
+		if (a.compInst->isStageBufferOffsetDirty == false) {
+			comp->sortUpdateCallbackList.push_back(a.compInst);
+			a.compInst->isStageBufferOffsetDirty = true;
+		}
+		if (b.compInst->isStageBufferOffsetDirty == false) {
+			comp->sortUpdateCallbackList.push_back(b.compInst);
+			b.compInst->isStageBufferOffsetDirty = true;
+		}
+	} else if (res = false && a.compInst->stageBufferOffset < b.compInst->stageBufferOffset) {
+		// Left to Right
+		auto comp = dynamic_cast<UI_Component_ColorQuad *>(a.compInst->component);
+		auto context = a.compInst->control->context;
+		auto data = comp->localDataMap[context];
+		a.compInst->stageBufferOffset = (uint64_t)((&a - data.entries.data()) + 1);
+		b.compInst->stageBufferOffset = (uint64_t)((&b - data.entries.data()) - 1);
+		if (a.compInst->isStageBufferOffsetDirty == false) {
+			comp->sortUpdateCallbackList.push_back(a.compInst);
+			a.compInst->isStageBufferOffsetDirty = true;
+		}
+		if (b.compInst->isStageBufferOffsetDirty == false) {
+			comp->sortUpdateCallbackList.push_back(b.compInst);
+			b.compInst->isStageBufferOffsetDirty = true;
+		}
+	}
+	return res;
 }
 
 static const char *vertShaderText =
@@ -318,18 +362,6 @@ UI_Component_ColorQuad::Init(Renderer_Vulkan *r)
 		vkUnmapMemory(r->global.device, vertexBufferMemory);
 	}
 
-	srand((unsigned int)time(NULL));
-	entries.resize(1024);
-	for (auto &entry : entries) {
-		entry.position = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2048.f, static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 1024.f };
-		entry.extent = { 256.f, 256.f };
-//		entry.color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), 1.f };
-		entry.color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) < 0.5f ? 1.f : static_cast<float>(rand()) / static_cast<float>(RAND_MAX) };
-		entry.scissor = { entry.position.x, entry.position.y, entry.extent.x, entry.extent.y };
-		entry.hz = { -static_cast<float>(rand()) / static_cast<float>(RAND_MAX), 0.1f };
-	}
-
-	sort(entries.begin(), entries.end(), sortLocalData);
 	isInitialized = true;
 }
 
@@ -387,12 +419,20 @@ UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
 
 	auto &data = localDataMap[ctx];
 	if (data.islocalBufferDirty) {
-		sort(entries.begin(), entries.end(), sortLocalData);
+		sort(data.entries.begin(), data.entries.end(), sortLocalDataWithUpdate);
+//		sort(data.entries.begin(), data.entries.end(), sortLocalData);
+		
 		// TODO: Remap offsets
 
 		UploadLocalData(r, data);
 		data.islocalBufferDirty = false;
 	}
+
+//	float duration = 30.f;
+//	data.indirectCommand.instanceCount = (uint32_t)((float)entries.size() * (fmod((float)glfwGetTime(), duration) / duration));
+//	data.indirectCommand.instanceCount = (uint32_t)((float)entries.size() * (1.f - (fmod((float)glfwGetTime(), duration) / duration)));
+//	LOG_DEBUG("{}", data.indirectCommand.instanceCount);
+//	UploadIndirectData(r, data);
 }
 
 void
@@ -436,7 +476,7 @@ UI_Component_ColorQuad::UploadLocalData(Renderer_Vulkan *r, LocalData &data)
 		VkResult res = vkMapMemory(r->global.device, data.localStagingBufferMemory, 0, memReqs.size, 0, (void **)&pData);
 		assert(res == VK_SUCCESS);
 
-		memcpy(pData, entries.data(), entries.size() * sizeof(LocalDataEntry));
+		memcpy(pData, data.entries.data(), data.entries.size() * sizeof(LocalDataEntry));
 
 		vkUnmapMemory(r->global.device, data.localStagingBufferMemory);
 	}
@@ -444,7 +484,7 @@ UI_Component_ColorQuad::UploadLocalData(Renderer_Vulkan *r, LocalData &data)
 	// Indirect Command
 	{
 		data.indirectCommand.firstInstance = 0;
-		data.indirectCommand.instanceCount = (uint32_t)entries.size();
+		data.indirectCommand.instanceCount = (uint32_t)data.entries.size();
 		data.indirectCommand.firstVertex = 0;
 		data.indirectCommand.vertexCount = 4 * 3;
 
@@ -464,7 +504,7 @@ UI_Component_ColorQuad::UploadLocalData(Renderer_Vulkan *r, LocalData &data)
 
 	{
 		VkBufferCopy copyRegion = {};
-		copyRegion.size = entries.size() * sizeof(LocalDataEntry);
+		copyRegion.size = data.entries.size() * sizeof(LocalDataEntry);
 		vkCmdCopyBuffer(r->global.primaryCommandPool.currentBuffer, data.localStagingBufferObject, data.localBufferObject, 1, &copyRegion);
 	}
 
@@ -473,20 +513,66 @@ UI_Component_ColorQuad::UploadLocalData(Renderer_Vulkan *r, LocalData &data)
 		copyRegion.size = sizeof(VkDrawIndirectCommand);
 		vkCmdCopyBuffer(r->global.primaryCommandPool.currentBuffer, data.indirectStagingBufferObject, data.indirectBufferObject, 1, &copyRegion);
 	}
+}
 
+inline
+void
+UI_Component_ColorQuad::UploadIndirectData(Renderer_Vulkan *r, LocalData &data)
+{
+	// Indirect Command
+	{
+		data.indirectCommand.firstInstance = 0;
+		data.indirectCommand.instanceCount = (uint32_t)data.entries.size();
+		data.indirectCommand.firstVertex = 0;
+		data.indirectCommand.vertexCount = 4 * 3;
 
+		VkMemoryRequirements memReqs;
+		vkGetBufferMemoryRequirements(r->global.device, data.indirectStagingBufferObject, &memReqs);
+
+		uint8_t *pData;
+		VkResult res = vkMapMemory(r->global.device, data.indirectStagingBufferMemory, 0, memReqs.size, 0, (void **)&pData);
+		assert(res == VK_SUCCESS);
+
+		memcpy(pData, &data.indirectCommand, sizeof(VkDrawIndirectCommand));
+
+		vkUnmapMemory(r->global.device, data.indirectStagingBufferMemory);
+	}
+
+	{
+		VkBufferCopy copyRegion = {};
+		copyRegion.size = sizeof(VkDrawIndirectCommand);
+		vkCmdCopyBuffer(r->global.primaryCommandPool.currentBuffer, data.indirectStagingBufferObject, data.indirectBufferObject, 1, &copyRegion);
+	}
 }
 
 inline
 void
 UI_Component_ColorQuad::CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx)
 {
-	if (localDataMap.find(ctx) != localDataMap.end())
+	auto search = localDataMap.find(ctx);
+	if (search != localDataMap.end() && search->second.isInitialized)
 		return;
 
 //	VkResult res;
 
 	LocalData &data = localDataMap[ctx];
+
+/*	srand((unsigned int)time(NULL));
+	data.entries.resize(1024 * 256);
+	glm::vec2 screen { 1280.f, 720.f };
+	glm::vec2 ext { 32.f, 32.f };
+	for (auto &entry : data.entries) {
+		entry.position = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (screen.x - ext.x), static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (screen.y - ext.y) };
+		entry.extent = ext;
+//		entry.color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), 1.f };
+		entry.color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) < 0.15f ? 1.f : static_cast<float>(rand()) / static_cast<float>(RAND_MAX) };
+//		entry.color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), 0.9999f };
+		entry.scissor = { entry.position.x, entry.position.y, entry.extent.x, entry.extent.y };
+		entry.hz = { -static_cast<float>(rand()) / static_cast<float>(RAND_MAX), 0.1f };
+	}
+	
+	sort(data.entries.begin(), data.entries.end(), sortLocalDataWithUpdate);
+//	sort(data.entries.begin(), data.entries.end(), sortLocalData);*/
 
 	// Buffer Objects
 	{
@@ -517,14 +603,14 @@ UI_Component_ColorQuad::CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx)
 		};
 
 		assert(r->global.CreateBufferObject(
-			(uint32_t)(sizeof(LocalDataEntry) * entries.size()),
+			(uint32_t)(sizeof(LocalDataEntry) * data.entries.size()),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			data.localBufferObject,
 			data.localBufferMemory,
 			nullptr));
 		assert(r->global.CreateBufferObject(
-			(uint32_t)(sizeof(LocalDataEntry) * entries.size()),
+			(uint32_t)(sizeof(LocalDataEntry) * data.entries.size()),
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			data.localStagingBufferObject,
@@ -534,17 +620,46 @@ UI_Component_ColorQuad::CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx)
 		data.localBufferInfo = {
 			data.localBufferObject,
 			0,
-			sizeof(LocalDataEntry) * entries.size()
+			sizeof(LocalDataEntry) * data.entries.size()
 		};
 		data.localStagingBufferInfo = {
 			data.localStagingBufferObject,
 			0,
-			sizeof(LocalDataEntry) * entries.size()
+			sizeof(LocalDataEntry) * data.entries.size()
 		};
 	}
+
+	data.isInitialized = true;
 
 	UploadLocalData(r, data);
 }
 #endif
+
+
+void
+UI_Component_ColorQuad::OnAddToContext(UI_ComponentInstance *compInst, UI_Context *ctx)
+{
+#if OPENBBG_WITH_VULKAN
+	auto localCompInst = static_cast<UI_ComponentInstance_ColorQuad *>(compInst);
+	LocalData &data = localDataMap[ctx];
+	data.entries.push_back(LocalDataEntry());
+	compInst->stageBufferOffset = (uint64_t)(data.entries.size() * sizeof(LocalDataEntry));
+	compInst->isStageBufferOffsetDirty = true;
+	auto &entry = data.entries.back();
+	entry.compInst = compInst;
+	entry.position = compInst->relativePosition;
+	entry.extent = compInst->extent;
+	entry.color = localCompInst->color;
+	entry.scissor = { entry.position, entry.extent };
+	entry.hz.x = compInst->zActual;
+#endif
+}
+
+void
+UI_Component_ColorQuad::OnRemoveFromContext(UI_ComponentInstance *compInst, UI_Context *ctx)
+{
+#if OPENBBG_WITH_VULKAN
+#endif
+}
 
 }

@@ -64,6 +64,7 @@ UI_Control::AddToContext()
 		if (compInsts.empty())
 			context->components.push_back(compInst->component);
 		compInsts.push_back(compInst);
+		compInst->component->OnAddToContext(compInst, context);
 	}
 
 	for (auto child : children)
@@ -85,6 +86,7 @@ UI_Control::RemoveFromContext()
 	// Remove components
 	for (auto compInst : componentInstances) {
 		auto &compInsts = compInst->component->componentInstances[context];
+		compInst->component->OnRemoveFromContext(compInst, context);
 		compInsts.erase(find(compInsts.begin(), compInsts.end(), compInst));
 		if (compInsts.empty()) {
 			auto &components = context->components;

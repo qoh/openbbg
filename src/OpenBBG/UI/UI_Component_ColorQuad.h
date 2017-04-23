@@ -7,6 +7,14 @@
 namespace openbbg {
 
 typedef struct UI_Component_ColorQuad UI_Component_ColorQuad;
+typedef struct UI_ComponentInstance_ColorQuad UI_ComponentInstance_ColorQuad;
+
+struct UI_ComponentInstance_ColorQuad
+	: UI_ComponentInstance
+{
+	glm::vec4 color;
+};
+
 
 struct UI_Component_ColorQuad
 	: UI_Component
@@ -17,6 +25,8 @@ struct UI_Component_ColorQuad
 	virtual ~UI_Component_ColorQuad();
 
 	virtual UI_ComponentInstance *Construct();
+
+	virtual void Deconstruct(UI_ComponentInstance *compInst);
 
 #if OPENBBG_WITH_VULKAN
 	virtual void Init(Renderer_Vulkan *r);
@@ -52,8 +62,6 @@ struct UI_Component_ColorQuad
 		glm::vec2 hz;
 	} LocalDataEntry;
 
-	vector<LocalDataEntry> entries;
-
 	typedef struct LocalData {
 		VkDrawIndirectCommand indirectCommand;
 
@@ -75,13 +83,17 @@ struct UI_Component_ColorQuad
 		VkDescriptorPool descLocalPool;
 		vector<VkDescriptorSet> descLocalSets;
 
+		vector<LocalDataEntry> entries;
+
 		bool islocalBufferDirty { true };
+		bool isInitialized { false };
 	} LocalData;
 
 	map<UI_Context *, LocalData> localDataMap;
 
 	void CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx);
 	void UploadLocalData(Renderer_Vulkan *r, LocalData &data);
+	void UploadIndirectData(Renderer_Vulkan *r, LocalData &data);
 
 	// Instance Buffer
 	VkBuffer instanceBufferObject;
@@ -93,6 +105,9 @@ struct UI_Component_ColorQuad
 	VkDeviceMemory vertexBufferMemory;
 	VkDescriptorBufferInfo vertexBufferInfo;
 #endif
+
+	virtual void OnAddToContext(UI_ComponentInstance *compInst, UI_Context *ctx);
+	virtual void OnRemoveFromContext(UI_ComponentInstance *compInst, UI_Context *ctx);
 };
 
 }
