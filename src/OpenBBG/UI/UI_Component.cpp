@@ -6,6 +6,7 @@
 namespace openbbg {
 
 vector<UI_Component *> UI_Component::s_components;
+UI_Component *UI_Component::s_lastComponentRendered = nullptr;
 
 UI_Component::UI_Component()
 	: isInitialized(false)

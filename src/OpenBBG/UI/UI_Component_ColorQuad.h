@@ -43,9 +43,11 @@ struct UI_Component_ColorQuad
 
 	virtual void RenderOpaque(Renderer_Vulkan *r, UI_Context *ctx);
 
-	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst);
+	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, vector<UI_ComponentInstance *> &instances, uint32_t startInstance, uint32_t numInstances);
 
 	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst);
+
+	virtual void PopulateTransparentInstances(Renderer_Vulkan *r, UI_Context *ctx, vector<UI_ComponentInstance *> &instances);
 
 	VkPipeline pipeline;
 
@@ -63,15 +65,6 @@ struct UI_Component_ColorQuad
 	} LocalDataEntry;
 
 	typedef struct LocalData {
-		VkDrawIndirectCommand indirectCommand;
-
-		VkBuffer indirectBufferObject;
-		VkDeviceMemory indirectBufferMemory;
-		VkDescriptorBufferInfo indirectBufferInfo;
-		VkBuffer indirectStagingBufferObject;
-		VkDeviceMemory indirectStagingBufferMemory;
-		VkDescriptorBufferInfo indirectStagingBufferInfo;
-
 		VkBuffer localBufferObject;
 		VkDeviceMemory localBufferMemory;
 		VkDescriptorBufferInfo localBufferInfo;
@@ -79,13 +72,12 @@ struct UI_Component_ColorQuad
 		VkDeviceMemory localStagingBufferMemory;
 		VkDescriptorBufferInfo localStagingBufferInfo;
 
-		VkDescriptorSetLayout descLocalLayout;
-		VkDescriptorPool descLocalPool;
-		vector<VkDescriptorSet> descLocalSets;
-
 		vector<LocalDataEntry> entries;
 
-		bool islocalBufferDirty { true };
+		uint32_t numOpaque { 0 };
+		uint32_t numStaged { 0 };
+
+		bool isLocalBufferDirty { true };
 		bool isInitialized { false };
 	} LocalData;
 
@@ -93,12 +85,6 @@ struct UI_Component_ColorQuad
 
 	void CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx);
 	void UploadLocalData(Renderer_Vulkan *r, LocalData &data);
-	void UploadIndirectData(Renderer_Vulkan *r, LocalData &data);
-
-	// Instance Buffer
-	VkBuffer instanceBufferObject;
-	VkDeviceMemory instanceBufferMemory;
-	VkDescriptorBufferInfo instanceBufferInfo;
 
 	// Vertex Buffer
 	VkBuffer vertexBufferObject;

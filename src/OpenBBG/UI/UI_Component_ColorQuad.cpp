@@ -35,46 +35,10 @@ UI_Component_ColorQuad::Deconstruct(UI_ComponentInstance *compInst)
 }
 
 #if OPENBBG_WITH_VULKAN
-bool sortLocalData(UI_Component_ColorQuad::LocalDataEntry &a, UI_Component_ColorQuad::LocalDataEntry &b)
+bool
+sortLocalData(UI_Component_ColorQuad::LocalDataEntry &a, UI_Component_ColorQuad::LocalDataEntry &b)
 {
 	return (a.color.a == 1.f && b.color.a == 1.f) ? (a.hz.x > b.hz.x) : ((a.color.a == 1.f) ? true : ((b.color.a == 1.f) ? false : (a.hz.x < b.hz.x)));
-}
-
-bool sortLocalDataWithUpdate(UI_Component_ColorQuad::LocalDataEntry &a, UI_Component_ColorQuad::LocalDataEntry &b)
-{
-	bool res = (a.color.a == 1.f && b.color.a == 1.f) ? (a.hz.x > b.hz.x) : ((a.color.a == 1.f) ? true : ((b.color.a == 1.f) ? false : (a.hz.x < b.hz.x)));
-	if (res == true && a.compInst->stageBufferOffset > b.compInst->stageBufferOffset) {
-		// Right to Left
-		auto comp = dynamic_cast<UI_Component_ColorQuad *>(a.compInst->component);
-		auto context = a.compInst->control->context;
-		auto data = comp->localDataMap[context];
-		a.compInst->stageBufferOffset = (uint64_t)((&a - data.entries.data()) - 1);
-		b.compInst->stageBufferOffset = (uint64_t)((&b - data.entries.data()) + 1);
-		if (a.compInst->isStageBufferOffsetDirty == false) {
-			comp->sortUpdateCallbackList.push_back(a.compInst);
-			a.compInst->isStageBufferOffsetDirty = true;
-		}
-		if (b.compInst->isStageBufferOffsetDirty == false) {
-			comp->sortUpdateCallbackList.push_back(b.compInst);
-			b.compInst->isStageBufferOffsetDirty = true;
-		}
-	} else if (res = false && a.compInst->stageBufferOffset < b.compInst->stageBufferOffset) {
-		// Left to Right
-		auto comp = dynamic_cast<UI_Component_ColorQuad *>(a.compInst->component);
-		auto context = a.compInst->control->context;
-		auto data = comp->localDataMap[context];
-		a.compInst->stageBufferOffset = (uint64_t)((&a - data.entries.data()) + 1);
-		b.compInst->stageBufferOffset = (uint64_t)((&b - data.entries.data()) - 1);
-		if (a.compInst->isStageBufferOffsetDirty == false) {
-			comp->sortUpdateCallbackList.push_back(a.compInst);
-			a.compInst->isStageBufferOffsetDirty = true;
-		}
-		if (b.compInst->isStageBufferOffsetDirty == false) {
-			comp->sortUpdateCallbackList.push_back(b.compInst);
-			b.compInst->isStageBufferOffsetDirty = true;
-		}
-	}
-	return res;
 }
 
 static const char *vertShaderText =
@@ -97,7 +61,6 @@ static const char *vertShaderText =
     "};\n"
     "void main() {\n"
     "   outColor = inColor;\n"
-    "   outColor.a = 0.5;\n"
 	"   vec4 pos;\n"
 	"   pos.x = inPos.x + inExt.x * inVert.x;\n"
 	"   pos.y = inPos.y + inExt.y * inVert.y;\n"
@@ -374,12 +337,6 @@ UI_Component_ColorQuad::Cleanup(Renderer_Vulkan *r)
 	for (auto &entry : localDataMap) {
 		auto &data = entry.second;
 
-		// Indirect Command
-		vkDestroyBuffer(r->global.device, data.indirectStagingBufferObject, nullptr);
-		vkFreeMemory(r->global.device, data.indirectStagingBufferMemory, nullptr);
-		vkDestroyBuffer(r->global.device, data.indirectBufferObject, nullptr);
-		vkFreeMemory(r->global.device, data.indirectBufferMemory, nullptr);
-
 		// Instance Buffer
 		vkDestroyBuffer(r->global.device, data.localStagingBufferObject, nullptr);
 		vkFreeMemory(r->global.device, data.localStagingBufferMemory, nullptr);
@@ -418,21 +375,59 @@ UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
 	CreateLocalData(r, ctx);
 
 	auto &data = localDataMap[ctx];
-	if (data.islocalBufferDirty) {
-		sort(data.entries.begin(), data.entries.end(), sortLocalDataWithUpdate);
-//		sort(data.entries.begin(), data.entries.end(), sortLocalData);
-		
-		// TODO: Remap offsets
+	if (data.isLocalBufferDirty) {
+		sort(data.entries.begin(), data.entries.end(), sortLocalData);
+		sortUpdateCallbackList.reserve(data.entries.size());
+		uint32_t numEntries = (uint32_t)data.entries.size();
+		for (uint32_t a = 0; a < numEntries; ++a) {
+			auto &entry = data.entries[a];
+			if (entry.compInst->instanceIdx != a || entry.compInst->isDirty) {
+				sortUpdateCallbackList.push_back(entry.compInst);
+				entry.compInst->instanceIdx = a;
+				entry.compInst->isDirty = false;
+			}
+		}
 
-		UploadLocalData(r, data);
-		data.islocalBufferDirty = false;
+		if (sortUpdateCallbackList.empty() == false) {
+			VkMemoryRequirements memReqs;
+			vkGetBufferMemoryRequirements(r->global.device, data.localStagingBufferObject, &memReqs);
+
+			uint8_t *pData;
+			VkResult res = vkMapMemory(r->global.device, data.localStagingBufferMemory, 0, memReqs.size, 0, (void **)&pData);
+			assert(res == VK_SUCCESS);
+
+			uint32_t start;
+			uint32_t last = numeric_limits<uint32_t>::max();
+			for (auto entry : sortUpdateCallbackList) {
+				if (last == numeric_limits<uint32_t>::max())
+					start = entry->instanceIdx;
+				else if ((entry->instanceIdx - last) > 1) {
+					memcpy(pData, data.entries.data() + start, (last - start + 1) * sizeof(LocalDataEntry));
+					start = entry->instanceIdx;
+				}
+				last = entry->instanceIdx;
+			}
+
+			if (last != numeric_limits<uint32_t>::max())
+				memcpy(pData, data.entries.data() + start, (last - start + 1) * sizeof(LocalDataEntry));
+
+			vkUnmapMemory(r->global.device, data.localStagingBufferMemory);
+
+			sortUpdateCallbackList.clear();
+
+			
+			// TODO: Confirm if we want to do a dynamic copy
+			{
+				VkBufferCopy copyRegion = {};
+				copyRegion.size = data.entries.size() * sizeof(LocalDataEntry);
+				vkCmdCopyBuffer(r->global.primaryCommandPool.currentBuffer, data.localStagingBufferObject, data.localBufferObject, 1, &copyRegion);
+			}
+		} else if (data.numStaged != (uint32_t)data.entries.size()) {
+			UploadLocalData(r, data);
+			data.numStaged = (uint32_t)data.entries.size();
+		}
+		data.isLocalBufferDirty = false;
 	}
-
-//	float duration = 30.f;
-//	data.indirectCommand.instanceCount = (uint32_t)((float)entries.size() * (fmod((float)glfwGetTime(), duration) / duration));
-//	data.indirectCommand.instanceCount = (uint32_t)((float)entries.size() * (1.f - (fmod((float)glfwGetTime(), duration) / duration)));
-//	LOG_DEBUG("{}", data.indirectCommand.instanceCount);
-//	UploadIndirectData(r, data);
 }
 
 void
@@ -443,24 +438,50 @@ UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_Componen
 void
 UI_Component_ColorQuad::RenderOpaque(Renderer_Vulkan *r, UI_Context *ctx)
 {
-	LocalData &data = localDataMap[ctx];
-
-	const VkDeviceSize offsets[1] = { 0 };
-	vkCmdBindPipeline(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-	vkCmdBindDescriptorSets(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->pipeline_layout, 0, (uint32_t)r->global.descGlobalParamSets.size(), r->global.descGlobalParamSets.data(), 0, nullptr);
-	vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 0, 1, &vertexBufferObject, offsets);
-	vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 1, 1, &data.localBufferObject, offsets);
-	vkCmdDrawIndirect(r->global.primaryCommandPool.currentBuffer, data.indirectBufferObject, 0, 1, sizeof(VkDrawIndirectCommand));
+#if 1
+	{
+		LocalData &data = localDataMap[ctx];
+		const VkDeviceSize offsets[1] = { 0 };
+		vkCmdBindPipeline(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vkCmdBindDescriptorSets(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->pipeline_layout, 0, (uint32_t)r->global.descGlobalParamSets.size(), r->global.descGlobalParamSets.data(), 0, nullptr);
+		vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 0, 1, &vertexBufferObject, offsets);
+		vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 1, 1, &data.localBufferObject, offsets);
+		vkCmdDraw(r->global.primaryCommandPool.currentBuffer, 4 * 3, data.numOpaque, 0, 0);
+	}
+#endif
 }
 
 void
-UI_Component_ColorQuad::RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst)
+UI_Component_ColorQuad::RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, vector<UI_ComponentInstance *> &instances, uint32_t startInstance, uint32_t numInstances)
 {
+#if 1
+	{
+		if (s_lastComponentRendered != this) {
+			LocalData &data = localDataMap[ctx];
+			const VkDeviceSize offsets[1] = { 0 };
+			vkCmdBindPipeline(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+			vkCmdBindDescriptorSets(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->pipeline_layout, 0, (uint32_t)r->global.descGlobalParamSets.size(), r->global.descGlobalParamSets.data(), 0, nullptr);
+			vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 0, 1, &vertexBufferObject, offsets);
+			vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 1, 1, &data.localBufferObject, offsets);
+		}
+		vkCmdDraw(r->global.primaryCommandPool.currentBuffer, 4 * 3, numInstances, 0, instances[startInstance]->instanceIdx);
+	}
+#endif
 }
 
 void
 UI_Component_ColorQuad::RenderOverlay(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst)
 {
+}
+
+void
+UI_Component_ColorQuad::PopulateTransparentInstances(Renderer_Vulkan *r, UI_Context *ctx, vector<UI_ComponentInstance *> &instances)
+{
+	auto &data = localDataMap[ctx];
+	auto &compInsts = componentInstances[ctx];
+	uint32_t numInstances = (uint32_t)compInsts.size();
+	for (uint32_t a = data.numOpaque; a < numInstances; ++a)
+		instances.push_back(compInsts[a]);
 }
 
 inline
@@ -480,68 +501,11 @@ UI_Component_ColorQuad::UploadLocalData(Renderer_Vulkan *r, LocalData &data)
 
 		vkUnmapMemory(r->global.device, data.localStagingBufferMemory);
 	}
-	
-	// Indirect Command
-	{
-		data.indirectCommand.firstInstance = 0;
-		data.indirectCommand.instanceCount = (uint32_t)data.entries.size();
-		data.indirectCommand.firstVertex = 0;
-		data.indirectCommand.vertexCount = 4 * 3;
-
-		VkMemoryRequirements memReqs;
-		vkGetBufferMemoryRequirements(r->global.device, data.indirectStagingBufferObject, &memReqs);
-
-		uint8_t *pData;
-		VkResult res = vkMapMemory(r->global.device, data.indirectStagingBufferMemory, 0, memReqs.size, 0, (void **)&pData);
-		assert(res == VK_SUCCESS);
-
-		memcpy(pData, &data.indirectCommand, sizeof(VkDrawIndirectCommand));
-
-		vkUnmapMemory(r->global.device, data.indirectStagingBufferMemory);
-	}
-
-	//--------------------------------
 
 	{
 		VkBufferCopy copyRegion = {};
 		copyRegion.size = data.entries.size() * sizeof(LocalDataEntry);
 		vkCmdCopyBuffer(r->global.primaryCommandPool.currentBuffer, data.localStagingBufferObject, data.localBufferObject, 1, &copyRegion);
-	}
-
-	{
-		VkBufferCopy copyRegion = {};
-		copyRegion.size = sizeof(VkDrawIndirectCommand);
-		vkCmdCopyBuffer(r->global.primaryCommandPool.currentBuffer, data.indirectStagingBufferObject, data.indirectBufferObject, 1, &copyRegion);
-	}
-}
-
-inline
-void
-UI_Component_ColorQuad::UploadIndirectData(Renderer_Vulkan *r, LocalData &data)
-{
-	// Indirect Command
-	{
-		data.indirectCommand.firstInstance = 0;
-		data.indirectCommand.instanceCount = (uint32_t)data.entries.size();
-		data.indirectCommand.firstVertex = 0;
-		data.indirectCommand.vertexCount = 4 * 3;
-
-		VkMemoryRequirements memReqs;
-		vkGetBufferMemoryRequirements(r->global.device, data.indirectStagingBufferObject, &memReqs);
-
-		uint8_t *pData;
-		VkResult res = vkMapMemory(r->global.device, data.indirectStagingBufferMemory, 0, memReqs.size, 0, (void **)&pData);
-		assert(res == VK_SUCCESS);
-
-		memcpy(pData, &data.indirectCommand, sizeof(VkDrawIndirectCommand));
-
-		vkUnmapMemory(r->global.device, data.indirectStagingBufferMemory);
-	}
-
-	{
-		VkBufferCopy copyRegion = {};
-		copyRegion.size = sizeof(VkDrawIndirectCommand);
-		vkCmdCopyBuffer(r->global.primaryCommandPool.currentBuffer, data.indirectStagingBufferObject, data.indirectBufferObject, 1, &copyRegion);
 	}
 }
 
@@ -553,55 +517,10 @@ UI_Component_ColorQuad::CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx)
 	if (search != localDataMap.end() && search->second.isInitialized)
 		return;
 
-//	VkResult res;
-
 	LocalData &data = localDataMap[ctx];
-
-/*	srand((unsigned int)time(NULL));
-	data.entries.resize(1024 * 256);
-	glm::vec2 screen { 1280.f, 720.f };
-	glm::vec2 ext { 32.f, 32.f };
-	for (auto &entry : data.entries) {
-		entry.position = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (screen.x - ext.x), static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (screen.y - ext.y) };
-		entry.extent = ext;
-//		entry.color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), 1.f };
-		entry.color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) < 0.15f ? 1.f : static_cast<float>(rand()) / static_cast<float>(RAND_MAX) };
-//		entry.color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), 0.9999f };
-		entry.scissor = { entry.position.x, entry.position.y, entry.extent.x, entry.extent.y };
-		entry.hz = { -static_cast<float>(rand()) / static_cast<float>(RAND_MAX), 0.1f };
-	}
-	
-	sort(data.entries.begin(), data.entries.end(), sortLocalDataWithUpdate);
-//	sort(data.entries.begin(), data.entries.end(), sortLocalData);*/
 
 	// Buffer Objects
 	{
-		assert(r->global.CreateBufferObject(
-			sizeof(VkDrawIndirectCommand),
-			VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			data.indirectBufferObject,
-			data.indirectBufferMemory,
-			nullptr));
-		assert(r->global.CreateBufferObject(
-			sizeof(VkDrawIndirectCommand),
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			data.indirectStagingBufferObject,
-			data.indirectStagingBufferMemory,
-			nullptr));
-	
-		data.indirectBufferInfo = {
-			data.indirectBufferObject,
-			0,
-			sizeof(VkDrawIndirectCommand)
-		};
-		data.indirectStagingBufferInfo = {
-			data.indirectStagingBufferObject,
-			0,
-			sizeof(VkDrawIndirectCommand)
-		};
-
 		assert(r->global.CreateBufferObject(
 			(uint32_t)(sizeof(LocalDataEntry) * data.entries.size()),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -642,10 +561,12 @@ UI_Component_ColorQuad::OnAddToContext(UI_ComponentInstance *compInst, UI_Contex
 #if OPENBBG_WITH_VULKAN
 	auto localCompInst = static_cast<UI_ComponentInstance_ColorQuad *>(compInst);
 	LocalData &data = localDataMap[ctx];
+	compInst->instanceIdx = (uint32_t)data.entries.size();
+	data.isLocalBufferDirty = true;
 	data.entries.push_back(LocalDataEntry());
-	compInst->stageBufferOffset = (uint64_t)(data.entries.size() * sizeof(LocalDataEntry));
-	compInst->isStageBufferOffsetDirty = true;
 	auto &entry = data.entries.back();
+	if (localCompInst->color.a == 1.f)
+		++data.numOpaque;
 	entry.compInst = compInst;
 	entry.position = compInst->relativePosition;
 	entry.extent = compInst->extent;
@@ -659,6 +580,15 @@ void
 UI_Component_ColorQuad::OnRemoveFromContext(UI_ComponentInstance *compInst, UI_Context *ctx)
 {
 #if OPENBBG_WITH_VULKAN
+	auto localCompInst = static_cast<UI_ComponentInstance_ColorQuad *>(compInst);
+	LocalData &data = localDataMap[ctx];
+	data.entries.erase(data.entries.begin() + compInst->instanceIdx);
+	uint32_t numEntries = (uint32_t)data.entries.size();
+	for (auto a = compInst->instanceIdx; a < numEntries; ++a)
+		--data.entries[a].compInst->instanceIdx;
+	if (localCompInst->color.a == 1.f)
+		--data.numOpaque;
+	data.isLocalBufferDirty = true;
 #endif
 }
 

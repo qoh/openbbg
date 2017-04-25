@@ -84,6 +84,13 @@ UI_Context::Prepare(Renderer_Vulkan *r)
 }
 
 inline
+bool
+sortTransparentComponentInstances(UI_ComponentInstance *a, UI_ComponentInstance *b)
+{
+	return a->zActual < b->zActual;
+}
+
+inline
 void
 UI_Context::Render(Renderer_Vulkan *r)
 {
@@ -92,11 +99,44 @@ UI_Context::Render(Renderer_Vulkan *r)
 	// Render all opaque
 	for (auto uiComponent : components)
 		uiComponent->RenderOpaque(r, this);
-
+	
 	// Render all transparent
-	for (auto uiComponent : components)
-		for (auto compInst : uiComponent->componentInstances[this])
-			uiComponent->RenderTransparent(r, this, compInst);
+	if (isTransparentInstancesDirty) {
+		transparentInstances.clear();
+		for (auto uiComponent : components)
+			uiComponent->PopulateTransparentInstances(r, this, transparentInstances);
+		sort(transparentInstances.begin(), transparentInstances.end(), sortTransparentComponentInstances);
+		isTransparentInstancesDirty = false;
+	}
+	UI_Component::s_lastComponentRendered = nullptr;
+	uint32_t numInstances = (uint32_t)transparentInstances.size();
+#if 1
+	UI_Component *lastComponent = nullptr;
+	uint32_t startInstanceIdx = 0;
+	uint32_t numInstancesM1 = numInstances - 1;
+	for (uint32_t a = 0; a < numInstances; ++a) {
+		auto compInst = transparentInstances[a];
+		if (lastComponent == compInst->component && a != numInstancesM1)
+			continue; //  && ((a == numInstancesM1 && compInst->component != lastComponent) || a != numInstancesM1)
+		if (lastComponent != nullptr) {
+			if (compInst->component == lastComponent) {
+				lastComponent->RenderTransparent(r, this, transparentInstances, startInstanceIdx, a - startInstanceIdx + 1);
+				continue;
+			}
+			lastComponent->RenderTransparent(r, this, transparentInstances, startInstanceIdx, a - startInstanceIdx);
+		}
+		startInstanceIdx = a;
+		lastComponent = compInst->component;
+		if (a == numInstancesM1)
+			lastComponent->RenderTransparent(r, this, transparentInstances, startInstanceIdx, a - startInstanceIdx + 1);
+	}
+#else
+	for (uint32_t a = 0; a < numInstances; ++a) {
+		auto compInst = transparentInstances[a];
+		compInst->component->RenderTransparent(r, this, transparentInstances, a, 1);
+		UI_Component::s_lastComponentRendered = compInst->component;
+	}
+#endif
 
 	// Clear depth
 

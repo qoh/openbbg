@@ -30,6 +30,7 @@ UI_Class_ColorCtrl::Construct()
 		compInst->extent = { 16.f, 16.f };
 		compInst->zOffset = 0.f;
 		compInst->zActual = -0.5f;
+		compInst->control = ctrl;
 		ctrl->componentInstances.push_back(compInst);
 	}
 

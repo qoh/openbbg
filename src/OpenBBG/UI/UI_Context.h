@@ -13,6 +13,7 @@ typedef struct UI_Class UI_Class;
 typedef struct UI_Context UI_Context;
 typedef struct UI_Control UI_Control;
 typedef struct UI_Component UI_Component;
+typedef struct UI_ComponentInstance UI_ComponentInstance;
 
 struct UI_Context
 {
@@ -51,6 +52,10 @@ struct UI_Context
 	deque<UI_Class *> classes;
 
 	deque<UI_Component *> components;
+	
+	vector<UI_ComponentInstance *> transparentInstances;
+
+	bool isTransparentInstancesDirty { true };
 
 	void SetRoot(UI_Control *ctrl);
 

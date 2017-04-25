@@ -19,9 +19,8 @@ struct UI_ComponentInstance
 {
 	UI_Component *component;
 	UI_Control *control;
-	uint64_t stageBufferOffset { std::numeric_limits<uint64_t>::max() };
+	uint32_t instanceIdx { std::numeric_limits<uint32_t>::max() };
 	bool isDirty { true };
-	bool isStageBufferOffsetDirty { true };
 
 	float zOffset;
 
@@ -39,7 +38,7 @@ struct UI_Component
 
 	uint32_t isInitialized : 1;
 
-	deque<UI_ComponentInstance *> sortUpdateCallbackList;
+	vector<UI_ComponentInstance *> sortUpdateCallbackList;
 
 	map<UI_Context *, deque<UI_ComponentInstance *>> componentInstances;
 
@@ -50,6 +49,8 @@ struct UI_Component
 	map<UI_Context *, deque<UI_ComponentInstance *>> componentInstancesOverlay;
 
 	static vector<UI_Component *> s_components;
+
+	static UI_Component *s_lastComponentRendered;
 
 	virtual UI_ComponentInstance *Construct() = 0;
 
@@ -62,10 +63,11 @@ struct UI_Component
 	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx) = 0;
 	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
 	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx) = 0;
-	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
 	virtual void RenderOpaque(Renderer_Vulkan *r, UI_Context *ctx) = 0;
-	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
+	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, vector<UI_ComponentInstance *> &instances, uint32_t startInstance, uint32_t numInstances) = 0;
 	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
+	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
+	virtual void PopulateTransparentInstances(Renderer_Vulkan *r, UI_Context *ctx, vector<UI_ComponentInstance *> &instances) = 0;
 #endif
 
 	virtual void OnAddToContext(UI_ComponentInstance *compInst, UI_Context *ctx) = 0;

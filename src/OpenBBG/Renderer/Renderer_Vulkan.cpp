@@ -74,8 +74,8 @@ void Renderer_Vulkan::Render()
 	// TEMP - Frame Time Logging
 	if (isFirstFrame == false) {
 		GetTime(frameEnd);
-		frameCPULog.Push(GetTimeDurationMS(frameStart, frameQueue));
-		if (frameGPULog.Push(GetTimeDurationMS(frameQueue, frameEnd))) {
+		frameGPULog.Push(GetTimeDurationMS(frameQueue, frameEnd));
+		if (frameCPULog.Push(GetTimeDurationMS(frameStart, frameQueue))) {
 			float frameTime = frameCPULog.average + frameGPULog.average;
 			LOG_DEBUG("|  fps: {:12.3f}  |  mspf: {:6.3f}  |  cpu: {:6.3f}  |  gpu: {:6.3f}  |", 1000.f / frameTime, frameTime, frameCPULog.average, frameGPULog.average);
 		}
