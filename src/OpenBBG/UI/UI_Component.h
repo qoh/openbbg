@@ -72,6 +72,8 @@ struct UI_Component
 
 	virtual void OnAddToContext(UI_ComponentInstance *compInst, UI_Context *ctx) = 0;
 	virtual void OnRemoveFromContext(UI_ComponentInstance *compInst, UI_Context *ctx) = 0;
+
+	virtual void OnMetricsUpdate(UI_ComponentInstance *compInst) = 0;
 };
 
 }

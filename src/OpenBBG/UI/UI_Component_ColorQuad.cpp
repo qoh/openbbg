@@ -375,7 +375,23 @@ UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
 	CreateLocalData(r, ctx);
 
 	auto &data = localDataMap[ctx];
-	if (data.isLocalBufferDirty) {
+	if (data.isLocalBufferDirty) { // TEMP: Number of Elements or Z value change
+		//----------------------------------------------------------------------
+		// Result Attempt
+		if (data.numStaged != (uint32_t)data.entries.size()) {
+			if (data.numStaged < (uint32_t)data.entries.size()) {
+				vkDestroyBuffer(r->global.device, data.localStagingBufferObject, nullptr);
+				vkFreeMemory(r->global.device, data.localStagingBufferMemory, nullptr);
+				vkDestroyBuffer(r->global.device, data.localBufferObject, nullptr);
+				vkFreeMemory(r->global.device, data.localBufferMemory, nullptr);
+
+				data.isInitialized = false;
+			
+				CreateLocalData(r, ctx);
+			}
+			data.numStaged = (uint32_t)data.entries.size();
+		}
+
 		sort(data.entries.begin(), data.entries.end(), sortLocalData);
 		sortUpdateCallbackList.reserve(data.entries.size());
 		uint32_t numEntries = (uint32_t)data.entries.size();
@@ -387,6 +403,7 @@ UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
 				entry.compInst->isDirty = false;
 			}
 		}
+		//----------------------------------------------------------------------
 
 		if (sortUpdateCallbackList.empty() == false) {
 			VkMemoryRequirements memReqs;
@@ -402,15 +419,15 @@ UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
 				if (last == numeric_limits<uint32_t>::max())
 					start = entry->instanceIdx;
 				else if ((entry->instanceIdx - last) > 1) {
-					memcpy(pData, data.entries.data() + start, (last - start + 1) * sizeof(LocalDataEntry));
+					memcpy((LocalDataEntry *)pData + start, data.entries.data() + start, (last - start + 1) * sizeof(LocalDataEntry));
 					start = entry->instanceIdx;
 				}
 				last = entry->instanceIdx;
 			}
 
 			if (last != numeric_limits<uint32_t>::max())
-				memcpy(pData, data.entries.data() + start, (last - start + 1) * sizeof(LocalDataEntry));
-
+				memcpy((LocalDataEntry *)pData + start, data.entries.data() + start, (last - start + 1) * sizeof(LocalDataEntry));
+			
 			vkUnmapMemory(r->global.device, data.localStagingBufferMemory);
 
 			sortUpdateCallbackList.clear();
@@ -422,10 +439,8 @@ UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
 				copyRegion.size = data.entries.size() * sizeof(LocalDataEntry);
 				vkCmdCopyBuffer(r->global.primaryCommandPool.currentBuffer, data.localStagingBufferObject, data.localBufferObject, 1, &copyRegion);
 			}
-		} else if (data.numStaged != (uint32_t)data.entries.size()) {
-			UploadLocalData(r, data);
-			data.numStaged = (uint32_t)data.entries.size();
 		}
+
 		data.isLocalBufferDirty = false;
 	}
 }
@@ -567,6 +582,7 @@ UI_Component_ColorQuad::OnAddToContext(UI_ComponentInstance *compInst, UI_Contex
 	auto &entry = data.entries.back();
 	if (localCompInst->color.a == 1.f)
 		++data.numOpaque;
+	ctx->isTransparentInstancesDirty = true;
 	entry.compInst = compInst;
 	entry.position = compInst->relativePosition;
 	entry.extent = compInst->extent;
@@ -588,8 +604,24 @@ UI_Component_ColorQuad::OnRemoveFromContext(UI_ComponentInstance *compInst, UI_C
 		--data.entries[a].compInst->instanceIdx;
 	if (localCompInst->color.a == 1.f)
 		--data.numOpaque;
+	ctx->isTransparentInstancesDirty = true;
 	data.isLocalBufferDirty = true;
 #endif
+}
+
+void UI_Component_ColorQuad::OnMetricsUpdate(UI_ComponentInstance *compInst)
+{
+	compInst->isDirty = true;
+	if (compInst->control->context != nullptr) {
+		auto localCompInst = static_cast<UI_ComponentInstance_ColorQuad *>(compInst);
+		auto &data = localDataMap[compInst->control->context];
+		auto &entry = data.entries[compInst->instanceIdx];
+		entry.position = compInst->relativePosition;
+		entry.color = localCompInst->color;
+		entry.scissor.x = entry.position.x;
+		entry.scissor.y = entry.position.y;
+		data.isLocalBufferDirty = true;
+	}
 }
 
 }

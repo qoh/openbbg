@@ -99,5 +99,22 @@ UI_Control::RemoveFromContext()
 		child->RemoveFromContext();
 }
 
+inline
+void
+UI_Control::MetricsUpdate()
+{
+	for (auto compInst : componentInstances) {
+		compInst->relativePosition = positionAbsolute;
+		compInst->component->OnMetricsUpdate(compInst);
+	}
+}
+
+inline
+void
+UI_Control::SetRelativePosition(glm::vec2 pos)
+{
+	positionAbsolute = pos;
+	MetricsUpdate();
+}
 }
 #endif

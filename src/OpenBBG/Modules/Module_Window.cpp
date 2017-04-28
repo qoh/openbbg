@@ -5,6 +5,11 @@
 #include <OpenBBG/Window.h>
 #include <OpenBBG/Game.h>
 
+// TEMP
+#include <OpenBBG/UI/UI_Components.h>
+#include <OpenBBG/UI/UI_Classes.h>
+#include <OpenBBG/UI/UI_Context.h>
+
 // Windows
 #ifdef _WIN32
 #include <Winuser.h>
@@ -262,6 +267,7 @@ void Module_Window::HandleSizeChange(Window *window, int x, int y)
 
 // Input Events
 
+glm::vec2 g_mousePosition;
 void Module_Window::HandleCharacter(Window *window, unsigned int codepoint)
 {
 }
@@ -272,16 +278,41 @@ void Module_Window::HandleCursorEnter(Window *window, bool isCursorIn)
 
 void Module_Window::HandleCursorPositionChange(Window *window, double x, double y)
 {
+	g_mousePosition.x = (float)x;
+	g_mousePosition.y = (float)y;
+	g_masterContext->root->SetRelativePosition(g_mousePosition);
 }
 
 void Module_Window::HandleKey(Window *window, int key, int scancode, int action, int mods)
 {
 	if (key == GLFW_KEY_ESCAPE)
 		glfwSetWindowShouldClose(window->glfwWindow, GLFW_TRUE);
+	if (action != GLFW_PRESS && action != GLFW_REPEAT)
+		return;
+	UI_Control *child = UI_Class_ColorCtrl::Get()->Construct();
+	{
+		auto compInst = static_cast<UI_ComponentInstance_ColorQuad *>(child->componentInstances[0]);
+		compInst->relativePosition = g_mousePosition;
+		compInst->extent = glm::vec2(64.f, 64.f);
+		compInst->color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) < 0.15f ? 1.f : static_cast<float>(rand()) / static_cast<float>(RAND_MAX) };
+		compInst->zActual = -static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+	}
+	g_masterContext->root->AddChild(child);
 }
 
 void Module_Window::HandleMouseButton(Window *window, int button, int action, int mods)
 {
+	if (action != GLFW_PRESS)
+		return;
+	UI_Control *child = UI_Class_ColorCtrl::Get()->Construct();
+	{
+		auto compInst = static_cast<UI_ComponentInstance_ColorQuad *>(child->componentInstances[0]);
+		compInst->relativePosition = g_mousePosition;
+		compInst->extent = glm::vec2(64.f, 64.f);
+		compInst->color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) < 0.15f ? 1.f : static_cast<float>(rand()) / static_cast<float>(RAND_MAX) };
+		compInst->zActual = -static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+	}
+	g_masterContext->root->AddChild(child);
 }
 
 void Module_Window::HandleScroll(Window *window, double x, double y)

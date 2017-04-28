@@ -64,7 +64,8 @@ struct UI_Component_ColorQuad
 		glm::vec2 hz;
 	} LocalDataEntry;
 
-	typedef struct LocalData {
+	typedef struct LocalData
+	{
 		VkBuffer localBufferObject;
 		VkDeviceMemory localBufferMemory;
 		VkDescriptorBufferInfo localBufferInfo;
@@ -94,6 +95,8 @@ struct UI_Component_ColorQuad
 
 	virtual void OnAddToContext(UI_ComponentInstance *compInst, UI_Context *ctx);
 	virtual void OnRemoveFromContext(UI_ComponentInstance *compInst, UI_Context *ctx);
+	
+	virtual void OnMetricsUpdate(UI_ComponentInstance *compInst);
 };
 
 }

@@ -100,6 +100,10 @@ struct UI_Control : TreeNode<UI_Control>
 
 	void RemoveFromContext();
 
+	void MetricsUpdate();
+
+	void SetRelativePosition(glm::vec2 pos);
+
 	// TODO: Components
 	// TODO: Class
 	// TODO: Profile
