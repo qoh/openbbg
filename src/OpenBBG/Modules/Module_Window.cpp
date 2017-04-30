@@ -289,6 +289,11 @@ void Module_Window::HandleKey(Window *window, int key, int scancode, int action,
 		glfwSetWindowShouldClose(window->glfwWindow, GLFW_TRUE);
 	if (action != GLFW_PRESS && action != GLFW_REPEAT)
 		return;
+	if (key == GLFW_KEY_R) {
+		UI_Component_ColorQuad::Get()->localDataMap[g_masterContext].isLocalBufferDirty = true;
+		g_masterContext->isTransparentInstancesDirty = true;
+		return;
+	}
 	UI_Control *child = UI_Class_ColorCtrl::Get()->Construct();
 	{
 		auto compInst = static_cast<UI_ComponentInstance_ColorQuad *>(child->componentInstances[0]);

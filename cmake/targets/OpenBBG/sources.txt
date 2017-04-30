@@ -70,6 +70,8 @@
 				Vulkan_Pipeline.h
 				Vulkan_RenderNode.h
 				Vulkan_ShaderUtility.h
+				Vulkan_StagedBuffer.h
+				Vulkan_StagedBuffer_def.h
 			UI/
 				UI_Class.cpp
 				UI_Class.h

@@ -3,6 +3,7 @@
 
 // OpenBBG
 #include <OpenBBG/UI/UI_Component.h>
+#include <OpenBBG/Renderer/Vulkan_StagedBuffer.h>
 
 namespace openbbg {
 
@@ -66,12 +67,7 @@ struct UI_Component_ColorQuad
 
 	typedef struct LocalData
 	{
-		VkBuffer localBufferObject;
-		VkDeviceMemory localBufferMemory;
-		VkDescriptorBufferInfo localBufferInfo;
-		VkBuffer localStagingBufferObject;
-		VkDeviceMemory localStagingBufferMemory;
-		VkDescriptorBufferInfo localStagingBufferInfo;
+		vk::StagedBuffer localBuffer { VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT };
 
 		vector<LocalDataEntry> entries;
 
