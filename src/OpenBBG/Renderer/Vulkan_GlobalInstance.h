@@ -1,6 +1,20 @@
 #ifndef _OPENBBG__RENDERER__VULKAN_GLOBALINSTANCE_H_
 #define _OPENBBG__RENDERER__VULKAN_GLOBALINSTANCE_H_
 
+#define ENABLE_VALIDATION_LAYERS 1
+
+#if ENABLE_VALIDATION_LAYERS
+static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
+	VkDebugReportFlagsEXT flags,
+	VkDebugReportObjectTypeEXT objType,
+	uint64_t obj,
+	size_t location,
+	int32_t code,
+	const char *layerPrefix,
+	const char *msg,
+	void *userData);
+#endif
+
 namespace openbbg {
 namespace vk {
 
@@ -35,6 +49,7 @@ struct GlobalInstance
     VkQueue presentQueue;
 
 	CommandPool primaryCommandPool;
+	CommandPool transientCommandPool;
 
 	uint32_t numSwapchainImages;
     VkSwapchainKHR swapchain;
@@ -120,6 +135,13 @@ struct GlobalInstance
 	void SetViewport(float x, float y, float w, float h);
 
 	void SetScissor(int32_t x, int32_t y, int32_t w, int32_t h);
+
+
+#if ENABLE_VALIDATION_LAYERS
+	//- Validation Callback -
+
+	VkDebugReportCallbackEXT callback;
+#endif
 
 
 	//------------------------------------------------------------------------------

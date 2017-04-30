@@ -18,15 +18,20 @@ struct CommandPool
 	uint32_t numBuffers;
 	vector<VkCommandBuffer> buffers;
 	VkCommandBuffer currentBuffer;
+	bool isCurrentRecording;
+
+	VkCommandPoolCreateFlags createFlags;
 
 
 
-	CommandPool(VkDevice &device, uint32_t &qfiGraphics)
+	CommandPool(VkDevice &device, uint32_t &qfiGraphics, VkCommandPoolCreateFlags createFlags)
 		: isInitialized { false }
 		, device(device)
 		, qfiGraphics { qfiGraphics }
 		, currentBufferIdx { 0 }
 		, numBuffers { 0 }
+		, isCurrentRecording { false }
+		, createFlags { createFlags }
 	{
 	}
 
@@ -41,7 +46,7 @@ struct CommandPool
 		poolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolCreateInfo.pNext = nullptr;
 		poolCreateInfo.queueFamilyIndex = qfiGraphics;
-		poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		poolCreateInfo.flags = createFlags;
 
 		return vkCreateCommandPool(device, &poolCreateInfo, nullptr, &pool) == VK_SUCCESS;
 	}
@@ -100,6 +105,9 @@ struct CommandPool
 
 	inline void BeginCurrentBuffer()
 	{
+		if (isCurrentRecording)
+			return;
+
 		VkResult res;
 
 		VkCommandBufferBeginInfo beginInfo = {};
@@ -110,14 +118,21 @@ struct CommandPool
 
 		res = vkBeginCommandBuffer(currentBuffer, &beginInfo);
 		assert(res == VK_SUCCESS);
+
+		isCurrentRecording = true;
 	}
 
 	inline void EndCurrentBuffer()
 	{
+		if (isCurrentRecording == false)
+			return;
+
 		VkResult res;
 
 		res = vkEndCommandBuffer(currentBuffer);
 		assert(res == VK_SUCCESS);
+
+		isCurrentRecording = false;
 	}
 };
 

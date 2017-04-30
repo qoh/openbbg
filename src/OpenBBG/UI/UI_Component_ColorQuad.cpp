@@ -348,8 +348,7 @@ UI_Component_ColorQuad::Cleanup(Renderer_Vulkan *r)
 	vkDestroyBuffer(r->global.device, vertexBufferObject, nullptr);
 	vkFreeMemory(r->global.device, vertexBufferMemory, nullptr);
 
-	vkDestroyPipeline(r->global.device, pipeline, nullptr);
-
+	graphicsPipeline->Cleanup(r->global.device);
 	delete graphicsPipeline;
 	graphicsPipeline = nullptr;
 
@@ -378,18 +377,15 @@ UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
 	if (data.isLocalBufferDirty) { // TEMP: Number of Elements or Z value change
 		//----------------------------------------------------------------------
 		// Result Attempt
-		if (data.numStaged != (uint32_t)data.entries.size()) {
-			if (data.numStaged < (uint32_t)data.entries.size()) {
-				vkDestroyBuffer(r->global.device, data.localStagingBufferObject, nullptr);
-				vkFreeMemory(r->global.device, data.localStagingBufferMemory, nullptr);
-				vkDestroyBuffer(r->global.device, data.localBufferObject, nullptr);
-				vkFreeMemory(r->global.device, data.localBufferMemory, nullptr);
+		if (data.capacity < (uint32_t)data.entries.size()) {
+			vkDestroyBuffer(r->global.device, data.localStagingBufferObject, nullptr);
+			vkFreeMemory(r->global.device, data.localStagingBufferMemory, nullptr);
+			vkDestroyBuffer(r->global.device, data.localBufferObject, nullptr);
+			vkFreeMemory(r->global.device, data.localBufferMemory, nullptr);
 
-				data.isInitialized = false;
-			
-				CreateLocalData(r, ctx);
-			}
-			data.numStaged = (uint32_t)data.entries.size();
+			data.isInitialized = false;
+
+			CreateLocalData(r, ctx);
 		}
 
 		sort(data.entries.begin(), data.entries.end(), sortLocalData);
@@ -432,12 +428,53 @@ UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
 
 			sortUpdateCallbackList.clear();
 
-			
+/*			{
+				VkBufferMemoryBarrier bufferMemoryBarrier = {};
+				bufferMemoryBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+				bufferMemoryBarrier.pNext = nullptr;
+
+
+				bufferMemoryBarrier.srcAccessMask = VK_ACCESS_UNIFORM_READ_BIT;
+				bufferMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			}*/
+
 			// TODO: Confirm if we want to do a dynamic copy
 			{
+#if 1
+				VkCommandBuffer commandBuffer;
+
+				VkCommandBufferAllocateInfo allocInfo = {};
+				allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+				allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+				allocInfo.commandPool = r->global.transientCommandPool.pool;
+				allocInfo.commandBufferCount = 1;
+				vkAllocateCommandBuffers(r->global.device, &allocInfo, &commandBuffer);
+
+				VkCommandBufferBeginInfo beginInfo = {};
+				beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+				beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+				vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+				VkBufferCopy copyRegion = {};
+				copyRegion.size = data.entries.size() * sizeof(LocalDataEntry);
+				vkCmdCopyBuffer(commandBuffer, data.localStagingBufferObject, data.localBufferObject, 1, &copyRegion);
+
+				vkEndCommandBuffer(commandBuffer);
+
+				VkSubmitInfo submitInfo = {};
+				submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+				submitInfo.commandBufferCount = 1;
+				submitInfo.pCommandBuffers = &commandBuffer;
+
+				vkQueueSubmit(r->global.graphicsQueues[0], 1, &submitInfo, VK_NULL_HANDLE);
+				vkQueueWaitIdle(r->global.graphicsQueues[0]);
+
+				vkFreeCommandBuffers(r->global.device, r->global.transientCommandPool.pool, 1, &commandBuffer);
+#else
 				VkBufferCopy copyRegion = {};
 				copyRegion.size = data.entries.size() * sizeof(LocalDataEntry);
 				vkCmdCopyBuffer(r->global.primaryCommandPool.currentBuffer, data.localStagingBufferObject, data.localBufferObject, 1, &copyRegion);
+#endif
 			}
 		}
 
@@ -518,9 +555,41 @@ UI_Component_ColorQuad::UploadLocalData(Renderer_Vulkan *r, LocalData &data)
 	}
 
 	{
+#if 1
+		VkCommandBuffer commandBuffer;
+
+		VkCommandBufferAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = r->global.transientCommandPool.pool;
+		allocInfo.commandBufferCount = 1;
+		vkAllocateCommandBuffers(r->global.device, &allocInfo, &commandBuffer);
+
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+		VkBufferCopy copyRegion = {};
+		copyRegion.size = data.entries.size() * sizeof(LocalDataEntry);
+		vkCmdCopyBuffer(commandBuffer, data.localStagingBufferObject, data.localBufferObject, 1, &copyRegion);
+
+		vkEndCommandBuffer(commandBuffer);
+
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		vkQueueSubmit(r->global.graphicsQueues[0], 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(r->global.graphicsQueues[0]);
+
+		vkFreeCommandBuffers(r->global.device, r->global.transientCommandPool.pool, 1, &commandBuffer);
+#else
 		VkBufferCopy copyRegion = {};
 		copyRegion.size = data.entries.size() * sizeof(LocalDataEntry);
 		vkCmdCopyBuffer(r->global.primaryCommandPool.currentBuffer, data.localStagingBufferObject, data.localBufferObject, 1, &copyRegion);
+#endif
 	}
 }
 
@@ -534,17 +603,29 @@ UI_Component_ColorQuad::CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx)
 
 	LocalData &data = localDataMap[ctx];
 
+	// Store old capacity for logging purposes
+	auto oldCapacity = data.capacity;
+
+	if (data.capacity == 0)
+		data.capacity = 1;
+	uint32_t numEntries = (uint32_t)data.entries.size();
+	while (data.capacity < numEntries)
+		data.capacity <<= 1;
+	LOG_DEBUG("Reallocating buffer: {} -> {} entries...", oldCapacity, data.capacity);
+
 	// Buffer Objects
 	{
+		uint32_t numBytes = data.capacity * sizeof(LocalDataEntry);
+
 		assert(r->global.CreateBufferObject(
-			(uint32_t)(sizeof(LocalDataEntry) * data.entries.size()),
+			numBytes,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			data.localBufferObject,
 			data.localBufferMemory,
 			nullptr));
 		assert(r->global.CreateBufferObject(
-			(uint32_t)(sizeof(LocalDataEntry) * data.entries.size()),
+			numBytes,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			data.localStagingBufferObject,
@@ -554,18 +635,38 @@ UI_Component_ColorQuad::CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx)
 		data.localBufferInfo = {
 			data.localBufferObject,
 			0,
-			sizeof(LocalDataEntry) * data.entries.size()
+			numBytes
 		};
 		data.localStagingBufferInfo = {
 			data.localStagingBufferObject,
 			0,
-			sizeof(LocalDataEntry) * data.entries.size()
+			numBytes
 		};
 	}
 
 	data.isInitialized = true;
 
-	UploadLocalData(r, data);
+	{
+		VkMemoryRequirements memReqs;
+		vkGetBufferMemoryRequirements(r->global.device, data.localStagingBufferObject, &memReqs);
+
+		uint8_t *pData;
+		VkResult res = vkMapMemory(r->global.device, data.localStagingBufferMemory, 0, memReqs.size, 0, (void **)&pData);
+		assert(res == VK_SUCCESS);
+
+		size_t used = data.entries.size() * sizeof(LocalDataEntry);
+		memcpy(pData, data.entries.data(), used);
+
+		// Zero out rest of data
+#if 0
+		size_t leftover = data.capacity * sizeof(LocalDataEntry) - used;
+		memset(pData + used, 0, leftover);
+#endif
+
+		vkUnmapMemory(r->global.device, data.localStagingBufferMemory);
+	}
+
+//	UploadLocalData(r, data);
 }
 #endif
 

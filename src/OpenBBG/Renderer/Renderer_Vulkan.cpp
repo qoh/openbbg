@@ -93,14 +93,13 @@ void Renderer_Vulkan::Render()
 		g_masterContext->Prepare(this);
 
 	{
-		VkClearValue clear_values[2];
-//		clear_values[0].color.float32[0] = fmod((float)glfwGetTime(), 1.f);
-		clear_values[0].color.float32[0] = 0.2f;
-		clear_values[0].color.float32[1] = 0.2f;
-		clear_values[0].color.float32[2] = 0.2f;
-		clear_values[0].color.float32[3] = 0.2f;
-		clear_values[1].depthStencil.depth = 1.0f;
-		clear_values[1].depthStencil.stencil = 0;
+		VkClearValue clearValues[2];
+		clearValues[0].color.float32[0] = 0.2f;
+		clearValues[0].color.float32[1] = 0.2f;
+		clearValues[0].color.float32[2] = 0.2f;
+		clearValues[0].color.float32[3] = 0.2f;
+		clearValues[1].depthStencil.depth = 1.0f;
+		clearValues[1].depthStencil.stencil = 0;
 
 		// Get the index of the next available swapchain image:
 		res = vkAcquireNextImageKHR(global.device, global.swapchain, UINT64_MAX, global.imageAcquiredSemaphore, VK_NULL_HANDLE, &global.currentSwapchainBufferIdx);
@@ -119,7 +118,7 @@ void Renderer_Vulkan::Render()
 		rp_begin.renderArea.extent.width = global.width;
 		rp_begin.renderArea.extent.height = global.height;
 		rp_begin.clearValueCount = 2;
-		rp_begin.pClearValues = clear_values;
+		rp_begin.pClearValues = clearValues;
 
 		vkCmdBeginRenderPass(global.primaryCommandPool.currentBuffer, &rp_begin, VK_SUBPASS_CONTENTS_INLINE);
 		
@@ -134,38 +133,44 @@ void Renderer_Vulkan::Render()
 		//-----------------------------------------------
 
 		vkCmdEndRenderPass(global.primaryCommandPool.currentBuffer);
-
 	}
 
 	Game::Get()->jobsFrameEnd.ProcessAllCurrent();
 
 	global.primaryCommandPool.EndCurrentBuffer();
 
+	// TEMP - Frame Time Logging
+	GetTime(frameQueue);
+
+	vkResetFences(global.device, 1, &global.drawFence);
+
 	// Queue commands
 	{
-		const VkCommandBuffer cmd_bufs[] = { global.primaryCommandPool.currentBuffer };
-
-		VkPipelineStageFlags pipe_stage_flags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		VkSubmitInfo submit_info[1] = {};
-		submit_info[0].pNext = nullptr;
-		submit_info[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submit_info[0].waitSemaphoreCount = 1;
-		submit_info[0].pWaitSemaphores = &global.imageAcquiredSemaphore;
-		submit_info[0].pWaitDstStageMask = &pipe_stage_flags;
-		submit_info[0].commandBufferCount = 1;
-		submit_info[0].pCommandBuffers = cmd_bufs;
-		submit_info[0].signalSemaphoreCount = 0;
-		submit_info[0].pSignalSemaphores = nullptr;
-		
-		// TEMP - Frame Time Logging
-		GetTime(frameQueue);
-
-		/* Queue the command buffer for execution */
-		res = vkQueueSubmit(global.graphicsQueues[0], 1, submit_info, global.drawFence);
+		VkPipelineStageFlags pipelineStateFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		VkSubmitInfo submitInfo = {};
+		submitInfo.pNext = nullptr;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &global.imageAcquiredSemaphore;
+		submitInfo.pWaitDstStageMask = &pipelineStateFlags;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &global.primaryCommandPool.currentBuffer;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+		res = vkQueueSubmit(global.graphicsQueues[0], 1, &submitInfo, global.drawFence);
 		assert(res == VK_SUCCESS);
+	}
+		
+	// Wait for draw fence
+	{
+		do {
+			res = vkWaitForFences(global.device, 1, &global.drawFence, VK_TRUE, FENCE_TIMEOUT);
+		} while (res == VK_TIMEOUT);
+		assert(res == VK_SUCCESS);
+	}
 
-		/* Now present the image in the window */
-
+	// Present frame
+	{
 		VkPresentInfoKHR present;
 		present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		present.pNext = nullptr;
@@ -175,12 +180,6 @@ void Renderer_Vulkan::Render()
 		present.pWaitSemaphores = nullptr;
 		present.waitSemaphoreCount = 0;
 		present.pResults = nullptr;
-
-		do {
-			res = vkWaitForFences(global.device, 1, &global.drawFence, VK_TRUE, FENCE_TIMEOUT);
-		} while (res == VK_TIMEOUT);
-
-		assert(res == VK_SUCCESS);
 		res = vkQueuePresentKHR(global.presentQueue, &present);
 		assert(res == VK_SUCCESS);
 	}
@@ -214,28 +213,35 @@ void Renderer_Vulkan::Destroy()
 
 		global.primaryCommandPool.EndCurrentBuffer();
 
+		vkResetFences(global.device, 1, &global.drawFence);
+
 		// Queue commands
 		{
-			const VkCommandBuffer cmd_bufs[] = { global.primaryCommandPool.currentBuffer };
-
-			VkPipelineStageFlags pipe_stage_flags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			VkSubmitInfo submit_info[1] = {};
-			submit_info[0].pNext = nullptr;
-			submit_info[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-			submit_info[0].waitSemaphoreCount = 1;
-			submit_info[0].pWaitSemaphores = &global.imageAcquiredSemaphore;
-			submit_info[0].pWaitDstStageMask = &pipe_stage_flags;
-			submit_info[0].commandBufferCount = 1;
-			submit_info[0].pCommandBuffers = cmd_bufs;
-			submit_info[0].signalSemaphoreCount = 0;
-			submit_info[0].pSignalSemaphores = nullptr;
-
-			/* Queue the command buffer for execution */
-			res = vkQueueSubmit(global.graphicsQueues[0], 1, submit_info, global.drawFence);
+			VkPipelineStageFlags pipelineStateFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			VkSubmitInfo submitInfo = {};
+			submitInfo.pNext = nullptr;
+			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			submitInfo.waitSemaphoreCount = 1;
+			submitInfo.pWaitSemaphores = &global.imageAcquiredSemaphore;
+			submitInfo.pWaitDstStageMask = &pipelineStateFlags;
+			submitInfo.commandBufferCount = 1;
+			submitInfo.pCommandBuffers = &global.primaryCommandPool.currentBuffer;
+			submitInfo.signalSemaphoreCount = 0;
+			submitInfo.pSignalSemaphores = nullptr;
+			res = vkQueueSubmit(global.graphicsQueues[0], 1, &submitInfo, global.drawFence);
 			assert(res == VK_SUCCESS);
+		}
 
-			/* Now present the image in the window */
+		// Wait for draw fence
+		{
+			do {
+				res = vkWaitForFences(global.device, 1, &global.drawFence, VK_TRUE, FENCE_TIMEOUT);
+			} while (res == VK_TIMEOUT);
+			assert(res == VK_SUCCESS);
+		}
 
+		// Present frame
+		{
 			VkPresentInfoKHR present;
 			present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 			present.pNext = nullptr;
@@ -245,19 +251,10 @@ void Renderer_Vulkan::Destroy()
 			present.pWaitSemaphores = nullptr;
 			present.waitSemaphoreCount = 0;
 			present.pResults = nullptr;
-
-			do {
-				res = vkWaitForFences(global.device, 1, &global.drawFence, VK_TRUE, FENCE_TIMEOUT);
-			} while (res == VK_TIMEOUT);
-
-			assert(res == VK_SUCCESS);
 			res = vkQueuePresentKHR(global.presentQueue, &present);
 			assert(res == VK_SUCCESS);
 		}
 	}
-
-
-
 
 	// Build Command Buffer
 	global.primaryCommandPool.BeginCurrentBuffer();
@@ -267,26 +264,30 @@ void Renderer_Vulkan::Destroy()
 	UI_Component::CleanupAll(this);
 
 	global.primaryCommandPool.EndCurrentBuffer();
+	
+	vkResetFences(global.device, 1, &global.drawFence);
 
 	// Queue commands
 	{
-		const VkCommandBuffer cmd_bufs[] = { global.primaryCommandPool.currentBuffer };
-
-		VkPipelineStageFlags pipe_stage_flags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-		VkSubmitInfo submit_info[1] = {};
-		submit_info[0].pNext = nullptr;
-		submit_info[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submit_info[0].pWaitDstStageMask = &pipe_stage_flags;
-		submit_info[0].commandBufferCount = 1;
-		submit_info[0].pCommandBuffers = cmd_bufs;
-
-		/* Queue the command buffer for execution */
-		res = vkQueueSubmit(global.graphicsQueues[0], 1, submit_info, global.drawFence);
+		VkPipelineStageFlags pipelineStateFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+		VkSubmitInfo submitInfo = {};
+		submitInfo.pNext = nullptr;
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pWaitDstStageMask = &pipelineStateFlags;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &global.primaryCommandPool.currentBuffer;
+		submitInfo.signalSemaphoreCount = 0;
+		submitInfo.pSignalSemaphores = nullptr;
+		res = vkQueueSubmit(global.graphicsQueues[0], 1, &submitInfo, global.drawFence);
 		assert(res == VK_SUCCESS);
-
+	}
+	
+	// Wait for draw fence
+	{
 		do {
 			res = vkWaitForFences(global.device, 1, &global.drawFence, VK_TRUE, FENCE_TIMEOUT);
 		} while (res == VK_TIMEOUT);
+		assert(res == VK_SUCCESS);
 	}
 
 	// Cleanup global instance

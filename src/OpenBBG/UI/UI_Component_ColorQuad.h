@@ -76,7 +76,7 @@ struct UI_Component_ColorQuad
 		vector<LocalDataEntry> entries;
 
 		uint32_t numOpaque { 0 };
-		uint32_t numStaged { 0 };
+		uint32_t capacity { 1 };
 
 		bool isLocalBufferDirty { true };
 		bool isInitialized { false };

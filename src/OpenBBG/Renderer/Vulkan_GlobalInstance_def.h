@@ -1,13 +1,43 @@
 #ifndef _OPENBBG__RENDERER__VULKAN_GLOBALINSTANCE_DEF_H_
 #define _OPENBBG__RENDERER__VULKAN_GLOBALINSTANCE_DEF_H_
 
+#if ENABLE_VALIDATION_LAYERS
+static VKAPI_ATTR
+VkBool32 VKAPI_CALL
+VulkanDebugCallback(
+	VkDebugReportFlagsEXT flags,
+	VkDebugReportObjectTypeEXT objType,
+	uint64_t obj,
+	size_t location,
+	int32_t code,
+	const char *layerPrefix,
+	const char *msg,
+	void *userData)
+{
+	using namespace openbbg;
+	if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT) {
+		LOG_INFO("[vulkan] {}", msg);
+	} else if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT) {
+		LOG_WARN("[vulkan] {}", msg);
+	} else if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT) {
+		LOG_WARN("[vulkan] {}", msg);
+	} else if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
+		LOG_ERROR("[vulkan] {}", msg);
+	} else if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT) {
+		LOG_DEBUG("[vulkan] {}", msg);
+	}
+	return VK_FALSE;
+}
+#endif
+
 namespace openbbg {
 namespace vk {
 
 inline
 GlobalInstance::GlobalInstance()
 	: isInitialized { false }
-	, primaryCommandPool { device, qfiGraphics }
+	, primaryCommandPool { device, qfiGraphics, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT }
+	, transientCommandPool { device, qfiGraphics, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT }
 	, renderNode { nullptr }
 	, swapchainCreateInfo {}
 {
@@ -30,6 +60,40 @@ GlobalInstance::CreateInstance(const char *appSimpleName)
 {
 	// Layers
 	vector<const char *> layerNames;
+#if ENABLE_VALIDATION_LAYERS
+	const vector<const char *> validationLayers = {
+	//	"VK_LAYER_LUNARG_api_dump",
+		"VK_LAYER_LUNARG_core_validation",
+		"VK_LAYER_LUNARG_monitor",
+		"VK_LAYER_LUNARG_object_tracker",
+		"VK_LAYER_LUNARG_parameter_validation",
+		"VK_LAYER_LUNARG_screenshot",
+		"VK_LAYER_LUNARG_swapchain",
+		"VK_LAYER_GOOGLE_threading",
+		"VK_LAYER_GOOGLE_unique_objects",
+	//	"VK_LAYER_LUNARG_vktrace",
+	//	"VK_LAYER_NV_optimus",
+	//	"VK_LAYER_NV_nsight",
+	//	"VK_LAYER_RENDERDOC_Capture",
+	//	"VK_LAYER_VALVE_steam_overlay",
+		"VK_LAYER_LUNARG_standard_validation"
+	};
+
+	uint32_t layerCount;
+	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+	vector<VkLayerProperties> availableLayers(layerCount);
+	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+	for (const char *layerName : validationLayers)
+		for (const auto &layerProperties : availableLayers) {
+			if (strcmp(layerName, layerProperties.layerName) == 0) {
+				layerNames.push_back(layerName);
+				break;
+			}
+		}
+#endif
+
 
 	// Extensions
 	vector<const char *> extensionNames;
@@ -39,6 +103,10 @@ GlobalInstance::CreateInstance(const char *appSimpleName)
 #else
 	extensionNames.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
 #endif
+#if ENABLE_VALIDATION_LAYERS
+	extensionNames.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+#endif
+
 
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -59,7 +127,8 @@ GlobalInstance::CreateInstance(const char *appSimpleName)
 	instCreateInfo.enabledExtensionCount = (uint32_t)extensionNames.size();
 	instCreateInfo.ppEnabledExtensionNames = extensionNames.empty() ? nullptr : extensionNames.data();
 
-	return vkCreateInstance(&instCreateInfo, nullptr, &instance) == VK_SUCCESS;
+	VkResult res = vkCreateInstance(&instCreateInfo, nullptr, &instance);
+	return res == VK_SUCCESS;
 }
 	
 
@@ -187,6 +256,12 @@ GlobalInstance::CreateDevice()
 		queueCreateInfos[1].queueFamilyIndex = qfiPresent;
 	}
 
+	VkPhysicalDeviceFeatures supportedFeatures = {};
+	vkGetPhysicalDeviceFeatures(physicalDevices[0], &supportedFeatures);
+
+	VkPhysicalDeviceFeatures enabledFeatures = supportedFeatures;
+	enabledFeatures.shaderClipDistance = supportedFeatures.shaderClipDistance & VK_TRUE;
+
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceCreateInfo.pNext = nullptr;
@@ -194,7 +269,7 @@ GlobalInstance::CreateDevice()
 	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
 	deviceCreateInfo.enabledExtensionCount = (uint32_t)extensionNames.size();
 	deviceCreateInfo.ppEnabledExtensionNames = extensionNames.empty() ? nullptr : extensionNames.data();
-	deviceCreateInfo.pEnabledFeatures = nullptr;
+	deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
 
 	return vkCreateDevice(physicalDevices[0], &deviceCreateInfo, nullptr, &device) == VK_SUCCESS;
 }
@@ -237,13 +312,12 @@ GlobalInstance::CreateSwapChain(VkImageUsageFlags usageFlags)
 		swapchainExtent.height = std::min(std::max((uint32_t)height, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
 	} else
 		swapchainExtent = surfaceCapabilities.currentExtent;
-		
+	
 #if OPENBBG_VULKAN_VSYNC
 	VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
 #else
-	VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+	VkPresentModeKHR swapchainPresentMode = find(presentModes.begin(), presentModes.end(), VK_PRESENT_MODE_IMMEDIATE_KHR) == presentModes.end() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
 #endif
-//	VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
 
 	uint32_t desiredNumberOfSwapchainImages = surfaceCapabilities.minImageCount;
 
@@ -334,12 +408,31 @@ GlobalInstance::Init(const char *appSimpleName, GLFWwindow *window)
 		return true;
 
 	assert(CreateInstance(appSimpleName));
+
+#if ENABLE_VALIDATION_LAYERS
+	VkDebugReportCallbackCreateInfoEXT createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+	createInfo.flags = 0
+	//	| VK_DEBUG_REPORT_INFORMATION_BIT_EXT
+		| VK_DEBUG_REPORT_WARNING_BIT_EXT
+		| VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT
+		| VK_DEBUG_REPORT_ERROR_BIT_EXT
+	//	| VK_DEBUG_REPORT_DEBUG_BIT_EXT
+		;
+	createInfo.pfnCallback = VulkanDebugCallback;
+	auto vkCreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
+	if (vkCreateDebugReportCallbackEXT != nullptr)
+		vkCreateDebugReportCallbackEXT(instance, &createInfo, nullptr, &callback);
+#endif
+
 	assert(EnumerateDevices());
 	assert(InitSwapChainExtension(window));
 	assert(CreateDevice());
 	assert(CreateQueues());
 
 	primaryCommandPool.Init();
+	transientCommandPool.Init();
+
 	primaryCommandPool.BeginCurrentBuffer();
 
 	assert(CreateSwapChain());
@@ -400,7 +493,7 @@ GlobalInstance::Init(const char *appSimpleName, GLFWwindow *window)
 				0,
 				nullptr,
 				1,
-				(const VkAttachmentReference *)renderNode->attachmentDescs.data(),
+				(const VkAttachmentReference *)&renderNode->attachmentOutputRefs[0],
 				nullptr,
 				(const VkAttachmentReference *)&renderNode->attachmentOutputRefs[1],
 				0,
@@ -463,7 +556,7 @@ GlobalInstance::Cleanup()
 
 	//----------------------------
 	
-	vkFreeDescriptorSets(device, descGlobalParamPool, (uint32_t)descGlobalParamSets.size(), descGlobalParamSets.data());
+//	vkFreeDescriptorSets(device, descGlobalParamPool, (uint32_t)descGlobalParamSets.size(), descGlobalParamSets.data());
 
 	vkDestroyDescriptorPool(device, descGlobalParamPool, nullptr);
 
@@ -484,12 +577,19 @@ GlobalInstance::Cleanup()
 	vkDestroyPipelineCache(device, pipelineCache, nullptr);
 
 	DestroySwapChain();
-		
+
+	transientCommandPool.Cleanup();
 	primaryCommandPool.Cleanup();
 
 	vkDestroyDevice(device, nullptr);
 
 	vkDestroySurfaceKHR(instance, surface, nullptr);
+
+#if ENABLE_VALIDATION_LAYERS
+	auto vkDestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
+	if (vkDestroyDebugReportCallbackEXT != nullptr)
+		vkDestroyDebugReportCallbackEXT(instance, callback, nullptr);
+#endif
 
 	vkDestroyInstance(instance, nullptr);
 
