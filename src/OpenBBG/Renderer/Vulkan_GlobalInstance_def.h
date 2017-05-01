@@ -1,7 +1,7 @@
 #ifndef _OPENBBG__RENDERER__VULKAN_GLOBALINSTANCE_DEF_H_
 #define _OPENBBG__RENDERER__VULKAN_GLOBALINSTANCE_DEF_H_
 
-#if ENABLE_VALIDATION_LAYERS
+#if OPENBBG_VULKAN_ENABLE_VALIDATION_LAYERS
 static VKAPI_ATTR
 VkBool32 VKAPI_CALL
 VulkanDebugCallback(
@@ -60,7 +60,7 @@ GlobalInstance::CreateInstance(const char *appSimpleName)
 {
 	// Layers
 	vector<const char *> layerNames;
-#if ENABLE_VALIDATION_LAYERS
+#if OPENBBG_VULKAN_ENABLE_VALIDATION_LAYERS
 	const vector<const char *> validationLayers = {
 	//	"VK_LAYER_LUNARG_api_dump",
 		"VK_LAYER_LUNARG_core_validation",
@@ -103,7 +103,7 @@ GlobalInstance::CreateInstance(const char *appSimpleName)
 #else
 	extensionNames.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
 #endif
-#if ENABLE_VALIDATION_LAYERS
+#if OPENBBG_VULKAN_ENABLE_VALIDATION_LAYERS
 	extensionNames.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 #endif
 
@@ -409,7 +409,7 @@ GlobalInstance::Init(const char *appSimpleName, GLFWwindow *window)
 
 	assert(CreateInstance(appSimpleName));
 
-#if ENABLE_VALIDATION_LAYERS
+#if OPENBBG_VULKAN_ENABLE_VALIDATION_LAYERS
 	VkDebugReportCallbackCreateInfoEXT createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
 	createInfo.flags = 0
@@ -585,7 +585,7 @@ GlobalInstance::Cleanup()
 
 	vkDestroySurfaceKHR(instance, surface, nullptr);
 
-#if ENABLE_VALIDATION_LAYERS
+#if OPENBBG_VULKAN_ENABLE_VALIDATION_LAYERS
 	auto vkDestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
 	if (vkDestroyDebugReportCallbackEXT != nullptr)
 		vkDestroyDebugReportCallbackEXT(instance, callback, nullptr);

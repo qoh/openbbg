@@ -1,9 +1,9 @@
 #ifndef _OPENBBG__RENDERER__VULKAN_GLOBALINSTANCE_H_
 #define _OPENBBG__RENDERER__VULKAN_GLOBALINSTANCE_H_
 
-#define ENABLE_VALIDATION_LAYERS 0
+#define OPENBBG_VULKAN_ENABLE_VALIDATION_LAYERS 0
 
-#if ENABLE_VALIDATION_LAYERS
+#if OPENBBG_VULKAN_ENABLE_VALIDATION_LAYERS
 static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
 	VkDebugReportFlagsEXT flags,
 	VkDebugReportObjectTypeEXT objType,
@@ -137,7 +137,7 @@ struct GlobalInstance
 	void SetScissor(int32_t x, int32_t y, int32_t w, int32_t h);
 
 
-#if ENABLE_VALIDATION_LAYERS
+#if OPENBBG_VULKAN_ENABLE_VALIDATION_LAYERS
 	//- Validation Callback -
 
 	VkDebugReportCallbackEXT callback;

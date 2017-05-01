@@ -113,6 +113,23 @@ StagedBuffer::CopyEnd(Renderer_Vulkan *r, VkCommandBuffer *cmdBuffer)
 	vkFreeCommandBuffers(r->global.device, r->global.transientCommandPool.pool, 1, cmdBuffer);
 }
 
+inline
+void
+StagedBuffer::MapMemory(Renderer_Vulkan *r, void **ptr)
+{
+	VkMemoryRequirements memReqs;
+	vkGetBufferMemoryRequirements(r->global.device, stageBufferObject, &memReqs);
+	VkResult res = vkMapMemory(r->global.device, stageBufferMemory, 0, memReqs.size, 0, ptr);
+	assert(res == VK_SUCCESS);
+}
+
+inline
+void
+StagedBuffer::UnmapMemory(Renderer_Vulkan *r)
+{
+	vkUnmapMemory(r->global.device, stageBufferMemory);
+}
+
 }
 }
 #endif

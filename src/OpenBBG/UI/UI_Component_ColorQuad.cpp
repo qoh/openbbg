@@ -306,23 +306,11 @@ UI_Component_ColorQuad::Init(Renderer_Vulkan *r)
 	
 	// Vertex Buffer
 	{
-		VkMemoryRequirements memReqs;
-		assert(r->global.CreateBufferObject(
-			sizeof(g_vertexData),
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			vertexBufferObject,
-			vertexBufferMemory,
-			&memReqs));
-		vertexBufferInfo.range = memReqs.size;
-		vertexBufferInfo.offset = 0;
-
+		vertexBuffer.Init(r, sizeof(g_vertexData));
 		uint8_t *pData;
-		assert(VK_SUCCESS == vkMapMemory(r->global.device, vertexBufferMemory, 0, memReqs.size, 0, (void **)&pData));
-
+		vertexBuffer.MapMemory(r, (void **)&pData);
 		memcpy(pData, g_vertexData, sizeof(g_vertexData));
-
-		vkUnmapMemory(r->global.device, vertexBufferMemory);
+		vertexBuffer.UnmapMemory(r);
 	}
 
 	isInitialized = true;
@@ -339,9 +327,7 @@ UI_Component_ColorQuad::Cleanup(Renderer_Vulkan *r)
 		data.localBuffer.Cleanup(r);
 	}
 	
-	// Vertex Buffer
-	vkDestroyBuffer(r->global.device, vertexBufferObject, nullptr);
-	vkFreeMemory(r->global.device, vertexBufferMemory, nullptr);
+	vertexBuffer.Cleanup(r);
 
 	graphicsPipeline->Cleanup(r->global.device);
 	delete graphicsPipeline;
@@ -390,13 +376,9 @@ UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
 			}
 		}
 		//----------------------------------------------------------------------
-		
-		VkMemoryRequirements memReqs;
-		vkGetBufferMemoryRequirements(r->global.device, data.localBuffer.stageBufferObject, &memReqs);
 
 		uint8_t *pData;
-		VkResult res = vkMapMemory(r->global.device, data.localBuffer.stageBufferMemory, 0, memReqs.size, 0, (void **)&pData);
-		assert(res == VK_SUCCESS);
+		data.localBuffer.MapMemory(r, (void **)&pData);
 
 		if (sortUpdateCallbackList.empty()) {
 			memcpy(pData, data.entries.data(), data.entries.size() * sizeof(LocalDataEntry));
@@ -419,24 +401,7 @@ UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
 			sortUpdateCallbackList.clear();
 		}
 
-		// Validate entries
-#if 0
-		map<uint32_t, uint32_t> coverageMap;
-		LocalDataEntry *scope = (LocalDataEntry *)pData;
-		bool valid = true;
-		for (uint32_t a = 0; a < numEntries; ++a, ++scope) {
-			++coverageMap[scope->compInst->instanceIdx];
-			if (coverageMap[scope->compInst->instanceIdx] >= 2) {
-				valid = false;
-				break;
-			}
-		}
-		if (valid == false)
-			LOG_DEBUG("Staged data is invalid");
-#endif
-
-		vkUnmapMemory(r->global.device, data.localBuffer.stageBufferMemory);
-
+		data.localBuffer.UnmapMemory(r);
 		data.localBuffer.CopyToDevice(r, { 0, 0, data.entries.size() * sizeof(LocalDataEntry) });
 		data.isLocalBufferDirty = false;
 	}
@@ -456,7 +421,7 @@ UI_Component_ColorQuad::RenderOpaque(Renderer_Vulkan *r, UI_Context *ctx)
 		const VkDeviceSize offsets[1] = { 0 };
 		vkCmdBindPipeline(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vkCmdBindDescriptorSets(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->pipeline_layout, 0, (uint32_t)r->global.descGlobalParamSets.size(), r->global.descGlobalParamSets.data(), 0, nullptr);
-		vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 0, 1, &vertexBufferObject, offsets);
+		vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 0, 1, &vertexBuffer.bufferObject, offsets);
 		vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 1, 1, &data.localBuffer.deviceBufferObject, offsets);
 		vkCmdDraw(r->global.primaryCommandPool.currentBuffer, 4 * 3, data.numOpaque, 0, 0);
 	}
@@ -473,7 +438,7 @@ UI_Component_ColorQuad::RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, v
 			const VkDeviceSize offsets[1] = { 0 };
 			vkCmdBindPipeline(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 			vkCmdBindDescriptorSets(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->pipeline_layout, 0, (uint32_t)r->global.descGlobalParamSets.size(), r->global.descGlobalParamSets.data(), 0, nullptr);
-			vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 0, 1, &vertexBufferObject, offsets);
+			vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 0, 1, &vertexBuffer.bufferObject, offsets);
 			vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 1, 1, &data.localBuffer.deviceBufferObject, offsets);
 		}
 		vkCmdDraw(r->global.primaryCommandPool.currentBuffer, 4 * 3, numInstances, 0, instances[startInstance]->instanceIdx);
@@ -501,16 +466,10 @@ UI_Component_ColorQuad::UploadLocalData(Renderer_Vulkan *r, LocalData &data)
 {
 	// Instance Data
 	{
-		VkMemoryRequirements memReqs;
-		vkGetBufferMemoryRequirements(r->global.device, data.localBuffer.stageBufferObject, &memReqs);
-
 		uint8_t *pData;
-		VkResult res = vkMapMemory(r->global.device, data.localBuffer.stageBufferMemory, 0, memReqs.size, 0, (void **)&pData);
-		assert(res == VK_SUCCESS);
-
+		data.localBuffer.MapMemory(r, (void **)&pData);
 		memcpy(pData, data.entries.data(), data.entries.size() * sizeof(LocalDataEntry));
-
-		vkUnmapMemory(r->global.device, data.localBuffer.stageBufferMemory);
+		data.localBuffer.UnmapMemory(r);
 	}
 	
 	data.localBuffer.CopyToDevice(r, { 0, 0, data.entries.size() * sizeof(LocalDataEntry) });
@@ -534,7 +493,7 @@ UI_Component_ColorQuad::CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx)
 	uint32_t numEntries = (uint32_t)data.entries.size();
 	while (data.capacity < numEntries)
 		data.capacity <<= 1;
-	LOG_DEBUG("Reallocating buffer: {} -> {} entries...", oldCapacity, data.capacity);
+//	LOG_DEBUG("Reallocating buffer: {} -> {} entries...", oldCapacity, data.capacity);
 
 	// Buffer Objects
 	{
@@ -544,27 +503,7 @@ UI_Component_ColorQuad::CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx)
 
 	data.isInitialized = true;
 
-	{
-		VkMemoryRequirements memReqs;
-		vkGetBufferMemoryRequirements(r->global.device, data.localBuffer.stageBufferObject, &memReqs);
-
-		uint8_t *pData;
-		VkResult res = vkMapMemory(r->global.device, data.localBuffer.stageBufferMemory, 0, memReqs.size, 0, (void **)&pData);
-		assert(res == VK_SUCCESS);
-
-		size_t used = data.entries.size() * sizeof(LocalDataEntry);
-		memcpy(pData, data.entries.data(), used);
-
-		// Zero out rest of data
-#if 0
-		size_t leftover = data.capacity * sizeof(LocalDataEntry) - used;
-		memset(pData + used, 0, leftover);
-#endif
-
-		vkUnmapMemory(r->global.device, data.localBuffer.stageBufferMemory);
-	}
-
-//	UploadLocalData(r, data);
+	UploadLocalData(r, data);
 }
 #endif
 

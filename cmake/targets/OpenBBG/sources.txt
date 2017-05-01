@@ -64,6 +64,8 @@
 				Renderer_Vulkan.h
 				Utility_Vulkan.h
 				Utility_Vulkan_def.h
+				Vulkan_Buffer.h
+				Vulkan_Buffer_def.h
 				Vulkan_CommandPool.h
 				Vulkan_GlobalInstance.h
 				Vulkan_GlobalInstance_def.h

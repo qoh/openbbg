@@ -3,6 +3,7 @@
 
 // OpenBBG
 #include <OpenBBG/UI/UI_Component.h>
+#include <OpenBBG/Renderer/Vulkan_Buffer.h>
 #include <OpenBBG/Renderer/Vulkan_StagedBuffer.h>
 
 namespace openbbg {
@@ -83,10 +84,7 @@ struct UI_Component_ColorQuad
 	void CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx);
 	void UploadLocalData(Renderer_Vulkan *r, LocalData &data);
 
-	// Vertex Buffer
-	VkBuffer vertexBufferObject;
-	VkDeviceMemory vertexBufferMemory;
-	VkDescriptorBufferInfo vertexBufferInfo;
+	vk::Buffer vertexBuffer { VK_BUFFER_USAGE_VERTEX_BUFFER_BIT };
 #endif
 
 	virtual void OnAddToContext(UI_ComponentInstance *compInst, UI_Context *ctx);

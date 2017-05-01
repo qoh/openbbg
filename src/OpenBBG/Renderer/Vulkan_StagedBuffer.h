@@ -1,4 +1,4 @@
-#ifndef _OPENBBG__RENDERER__VULKAN_StagedBuffer_H_
+#ifndef _OPENBBG__RENDERER__VULKAN_STAGEDBUFFER_H_
 #define _OPENBBG__RENDERER__VULKAN_STAGEDBUFFER_H_
 
 namespace openbbg {
@@ -23,6 +23,10 @@ struct StagedBuffer
 	void CopyToDevice(Renderer_Vulkan *r, VkBufferCopy copyRegion);
 
 	void CopyToDevice(Renderer_Vulkan *r, vector<VkBufferCopy> copyRegions);
+
+	void MapMemory(Renderer_Vulkan *r, void **ptr);
+
+	void UnmapMemory(Renderer_Vulkan *r);
 
 	VkBufferUsageFlags flags;
 
