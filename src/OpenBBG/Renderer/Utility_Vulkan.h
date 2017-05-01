@@ -27,7 +27,6 @@ bool GetMemoryTypeFromProperties(VkPhysicalDeviceMemoryProperties &deviceMemoryP
 
 // OpenBBG
 #include <OpenBBG/Renderer/Vulkan_RenderNode.h>
-#include <OpenBBG/Renderer/Vulkan_Pipeline.h>
 #include <OpenBBG/Renderer/Vulkan_CommandPool.h>
 #include <OpenBBG/Renderer/Vulkan_GlobalInstance.h>
 

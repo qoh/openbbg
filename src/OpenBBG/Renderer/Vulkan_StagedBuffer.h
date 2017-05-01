@@ -12,21 +12,21 @@ struct StagedBuffer
 
 	~StagedBuffer();
 
-	void Init(Renderer_Vulkan *r, uint64_t numBytes);
+	void Init(uint64_t numBytes);
 
-	void Cleanup(Renderer_Vulkan *r);
+	void Cleanup();
 
-	void CopyBegin(Renderer_Vulkan *r, VkCommandBuffer *cmdBuffer);
+	void CopyBegin(VkCommandBuffer *cmdBuffer);
 
-	void CopyEnd(Renderer_Vulkan *r, VkCommandBuffer *cmdBuffer);
+	void CopyEnd(VkCommandBuffer *cmdBuffer);
 
-	void CopyToDevice(Renderer_Vulkan *r, VkBufferCopy copyRegion);
+	void CopyToDevice(VkBufferCopy copyRegion);
 
-	void CopyToDevice(Renderer_Vulkan *r, vector<VkBufferCopy> copyRegions);
+	void CopyToDevice(vector<VkBufferCopy> copyRegions);
 
-	void MapMemory(Renderer_Vulkan *r, void **ptr);
+	void MapMemory(void **ptr);
 
-	void UnmapMemory(Renderer_Vulkan *r);
+	void UnmapMemory();
 
 	VkBufferUsageFlags flags;
 

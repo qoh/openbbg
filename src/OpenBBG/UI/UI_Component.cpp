@@ -21,11 +21,11 @@ UI_Component::~UI_Component()
 
 #if OPENBBG_WITH_VULKAN
 void
-UI_Component::CleanupAll(Renderer_Vulkan *r)
+UI_Component::CleanupAll()
 {
 	for (auto cl : s_components)
 		if (cl->isInitialized)
-			cl->Cleanup(r);
+			cl->Cleanup();
 }
 #endif
 

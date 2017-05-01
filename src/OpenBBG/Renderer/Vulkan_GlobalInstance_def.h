@@ -259,7 +259,7 @@ GlobalInstance::CreateDevice()
 	VkPhysicalDeviceFeatures supportedFeatures = {};
 	vkGetPhysicalDeviceFeatures(physicalDevices[0], &supportedFeatures);
 
-	VkPhysicalDeviceFeatures enabledFeatures = supportedFeatures;
+	VkPhysicalDeviceFeatures enabledFeatures = {};
 	enabledFeatures.shaderClipDistance = supportedFeatures.shaderClipDistance & VK_TRUE;
 
 	VkDeviceCreateInfo deviceCreateInfo = {};

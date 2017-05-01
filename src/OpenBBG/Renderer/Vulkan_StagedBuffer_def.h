@@ -16,8 +16,9 @@ StagedBuffer::~StagedBuffer()
 
 inline
 void
-StagedBuffer::Init(Renderer_Vulkan *r, uint64_t numBytes)
+StagedBuffer::Init(uint64_t numBytes)
 {
+	auto r = Renderer_Vulkan::Get();
 	assert(r->global.CreateBufferObject(
 		numBytes,
 		flags | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -47,8 +48,9 @@ StagedBuffer::Init(Renderer_Vulkan *r, uint64_t numBytes)
 
 inline
 void
-StagedBuffer::Cleanup(Renderer_Vulkan *r)
+StagedBuffer::Cleanup()
 {
+	auto r = Renderer_Vulkan::Get();
 	vkDestroyBuffer(r->global.device, stageBufferObject, nullptr);
 	vkFreeMemory(r->global.device, stageBufferMemory, nullptr);
 	vkDestroyBuffer(r->global.device, deviceBufferObject, nullptr);
@@ -57,32 +59,29 @@ StagedBuffer::Cleanup(Renderer_Vulkan *r)
 
 inline
 void
-StagedBuffer::CopyToDevice(Renderer_Vulkan *r, VkBufferCopy copyRegion)
+StagedBuffer::CopyToDevice(VkBufferCopy copyRegion)
 {
 	VkCommandBuffer commandBuffer;
-	CopyBegin(r, &commandBuffer);
-
+	CopyBegin(&commandBuffer);
 	vkCmdCopyBuffer(commandBuffer, stageBufferObject, deviceBufferObject, 1, &copyRegion);
-
-	CopyEnd(r, &commandBuffer);
+	CopyEnd(&commandBuffer);
 }
 
 inline
 void
-StagedBuffer::CopyToDevice(Renderer_Vulkan *r, vector<VkBufferCopy> copyRegions)
+StagedBuffer::CopyToDevice(vector<VkBufferCopy> copyRegions)
 {
 	VkCommandBuffer commandBuffer;
-	CopyBegin(r, &commandBuffer);
-
+	CopyBegin(&commandBuffer);
 	vkCmdCopyBuffer(commandBuffer, stageBufferObject, deviceBufferObject, (uint32_t)copyRegions.size(), copyRegions.data());
-
-	CopyEnd(r, &commandBuffer);
+	CopyEnd(&commandBuffer);
 }
 
 inline
 void
-StagedBuffer::CopyBegin(Renderer_Vulkan *r, VkCommandBuffer *cmdBuffer)
+StagedBuffer::CopyBegin(VkCommandBuffer *cmdBuffer)
 {
+	auto r = Renderer_Vulkan::Get();
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -98,8 +97,9 @@ StagedBuffer::CopyBegin(Renderer_Vulkan *r, VkCommandBuffer *cmdBuffer)
 
 inline
 void
-StagedBuffer::CopyEnd(Renderer_Vulkan *r, VkCommandBuffer *cmdBuffer)
+StagedBuffer::CopyEnd(VkCommandBuffer *cmdBuffer)
 {
+	auto r = Renderer_Vulkan::Get();
 	vkEndCommandBuffer(*cmdBuffer);
 
 	VkSubmitInfo submitInfo = {};
@@ -115,8 +115,9 @@ StagedBuffer::CopyEnd(Renderer_Vulkan *r, VkCommandBuffer *cmdBuffer)
 
 inline
 void
-StagedBuffer::MapMemory(Renderer_Vulkan *r, void **ptr)
+StagedBuffer::MapMemory(void **ptr)
 {
+	auto r = Renderer_Vulkan::Get();
 	VkMemoryRequirements memReqs;
 	vkGetBufferMemoryRequirements(r->global.device, stageBufferObject, &memReqs);
 	VkResult res = vkMapMemory(r->global.device, stageBufferMemory, 0, memReqs.size, 0, ptr);
@@ -125,8 +126,9 @@ StagedBuffer::MapMemory(Renderer_Vulkan *r, void **ptr)
 
 inline
 void
-StagedBuffer::UnmapMemory(Renderer_Vulkan *r)
+StagedBuffer::UnmapMemory()
 {
+	auto r = Renderer_Vulkan::Get();
 	vkUnmapMemory(r->global.device, stageBufferMemory);
 }
 

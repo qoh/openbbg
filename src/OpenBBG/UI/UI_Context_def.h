@@ -73,13 +73,13 @@ UI_Context::CleanupAll()
 #if OPENBBG_WITH_VULKAN
 inline
 void
-UI_Context::Prepare(Renderer_Vulkan *r)
+UI_Context::Prepare()
 {
 	// Prepare
 	for (auto uiComponent : components) {
-		uiComponent->Prepare(r, this);
+		uiComponent->Prepare(this);
 		for (auto compInst : uiComponent->componentInstances[this])
-			uiComponent->Prepare(r, this, compInst);
+			uiComponent->Prepare(this, compInst);
 	}
 }
 
@@ -92,19 +92,19 @@ sortTransparentComponentInstances(UI_ComponentInstance *a, UI_ComponentInstance 
 
 inline
 void
-UI_Context::Render(Renderer_Vulkan *r)
+UI_Context::Render()
 {
 	// TODO: Properly distinguish the different groups of renderables
 
 	// Render all opaque
 	for (auto uiComponent : components)
-		uiComponent->RenderOpaque(r, this);
+		uiComponent->RenderOpaque(this);
 	
 	// Render all transparent
 	if (isTransparentInstancesDirty) {
 		transparentInstances.clear();
 		for (auto uiComponent : components)
-			uiComponent->PopulateTransparentInstances(r, this, transparentInstances);
+			uiComponent->PopulateTransparentInstances(this, transparentInstances);
 		sort(transparentInstances.begin(), transparentInstances.end(), sortTransparentComponentInstances);
 		isTransparentInstancesDirty = false;
 	}
@@ -120,20 +120,20 @@ UI_Context::Render(Renderer_Vulkan *r)
 			continue; //  && ((a == numInstancesM1 && compInst->component != lastComponent) || a != numInstancesM1)
 		if (lastComponent != nullptr) {
 			if (compInst->component == lastComponent) {
-				lastComponent->RenderTransparent(r, this, transparentInstances, startInstanceIdx, a - startInstanceIdx + 1);
+				lastComponent->RenderTransparent(this, transparentInstances, startInstanceIdx, a - startInstanceIdx + 1);
 				continue;
 			}
-			lastComponent->RenderTransparent(r, this, transparentInstances, startInstanceIdx, a - startInstanceIdx);
+			lastComponent->RenderTransparent(this, transparentInstances, startInstanceIdx, a - startInstanceIdx);
 		}
 		startInstanceIdx = a;
 		lastComponent = compInst->component;
 		if (a == numInstancesM1)
-			lastComponent->RenderTransparent(r, this, transparentInstances, startInstanceIdx, a - startInstanceIdx + 1);
+			lastComponent->RenderTransparent(this, transparentInstances, startInstanceIdx, a - startInstanceIdx + 1);
 	}
 #else
 	for (uint32_t a = 0; a < numInstances; ++a) {
 		auto compInst = transparentInstances[a];
-		compInst->component->RenderTransparent(r, this, transparentInstances, a, 1);
+		compInst->component->RenderTransparent(this, transparentInstances, a, 1);
 		UI_Component::s_lastComponentRendered = compInst->component;
 	}
 #endif
@@ -143,18 +143,18 @@ UI_Context::Render(Renderer_Vulkan *r)
 	// Render all overlay
 	for (auto uiComponent : components)
 		for (auto compInst : uiComponent->componentInstances[this])
-			uiComponent->RenderOverlay(r, this, compInst);
+			uiComponent->RenderOverlay(this, compInst);
 }
 
 inline
 void
-UI_Context::Cleanup(Renderer_Vulkan *r)
+UI_Context::Cleanup()
 {
 	// Cleanup
 	for (auto uiComponent : components) {
 		for (auto compInst : uiComponent->componentInstances[this])
-			uiComponent->Cleanup(r, this, compInst);
-		uiComponent->Cleanup(r, this);
+			uiComponent->Cleanup(this, compInst);
+		uiComponent->Cleanup(this);
 	}
 }
 #endif

@@ -290,7 +290,7 @@ void Module_Window::HandleKey(Window *window, int key, int scancode, int action,
 	if (action != GLFW_PRESS && action != GLFW_REPEAT)
 		return;
 	if (key == GLFW_KEY_R) {
-		UI_Component_ColorQuad::Get()->localDataMap[g_masterContext].isLocalBufferDirty = true;
+		UI_Component_ColorQuad::Get()->instancedDataMap[g_masterContext].isLocalBufferDirty = true;
 		g_masterContext->isTransparentInstancesDirty = true;
 		return;
 	}

@@ -42,9 +42,9 @@ struct UI_Context
 	//-----------------------------------
 	
 #if OPENBBG_WITH_VULKAN
-	void Prepare(Renderer_Vulkan *r);
-	void Render(Renderer_Vulkan *r);
-	void Cleanup(Renderer_Vulkan *r);
+	void Prepare();
+	void Render();
+	void Cleanup();
 #endif
 
 	//--------------------------------------

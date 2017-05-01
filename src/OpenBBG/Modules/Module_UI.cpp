@@ -40,8 +40,8 @@ bool Module_UI::ModuleInit(Game *game)
 			compInst->relativePosition = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (screen.x - ext.x), static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (screen.y - ext.y) };
 			compInst->extent = ext;
 //			compInst->color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) < 0.15f ? 1.f : static_cast<float>(rand()) / static_cast<float>(RAND_MAX) };
-			compInst->color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), 0.9f };
-//			compInst->color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), 1.f };
+//			compInst->color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), 0.9f };
+			compInst->color = { static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), static_cast<float>(rand()) / static_cast<float>(RAND_MAX), 1.f };
 			compInst->zActual = -static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 //			compInst->zActual = -0.15f;
 		}

@@ -4,6 +4,7 @@
 // OpenBBG
 #include <OpenBBG/Renderer/Renderer_Vulkan.h>
 #include <OpenBBG/Renderer/Utility_Vulkan.h>
+#include <OpenBBG/Renderer/Vulkan_Pipeline.h>
 #include <OpenBBG/Game.h>
 #include <OpenBBG/Window.h>
 #include <OpenBBG/Log.h>
@@ -16,6 +17,13 @@
 
 namespace openbbg {
 
+thread_local Renderer_Vulkan *Renderer_Vulkan::s_current = nullptr;
+
+void Renderer_Vulkan::SetCurrent()
+{
+	s_current = this;
+}
+
 deque<vk::GraphicsPipeline *> vk::GraphicsPipeline::s_pipelines;
 
 Renderer_Vulkan::Renderer_Vulkan(Window *window)
@@ -25,6 +33,7 @@ Renderer_Vulkan::Renderer_Vulkan(Window *window)
 	, frameCPULog { 1000.f }
 	, frameGPULog { 1000.f }
 {
+	SetCurrent();
 	Init();
 }
 
@@ -90,7 +99,7 @@ void Renderer_Vulkan::Render()
 	Game::Get()->jobsFrameStart.ProcessAllCurrent();
 
 	if (g_masterContext != nullptr)
-		g_masterContext->Prepare(this);
+		g_masterContext->Prepare();
 
 	{
 		VkClearValue clearValues[2];
@@ -127,7 +136,7 @@ void Renderer_Vulkan::Render()
 
 		// TODO: Render current UI context
 		if (g_masterContext != nullptr)
-			g_masterContext->Render(this);
+			g_masterContext->Render();
 
 
 		//-----------------------------------------------
@@ -260,8 +269,8 @@ void Renderer_Vulkan::Destroy()
 	global.primaryCommandPool.BeginCurrentBuffer();
 
 	if (g_masterContext != nullptr)
-		g_masterContext->Cleanup(this);
-	UI_Component::CleanupAll(this);
+		g_masterContext->Cleanup();
+	UI_Component::CleanupAll();
 
 	global.primaryCommandPool.EndCurrentBuffer();
 	

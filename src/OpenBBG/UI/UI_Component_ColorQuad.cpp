@@ -36,7 +36,7 @@ UI_Component_ColorQuad::Deconstruct(UI_ComponentInstance *compInst)
 
 #if OPENBBG_WITH_VULKAN
 bool
-sortLocalData(UI_Component_ColorQuad::LocalDataEntry &a, UI_Component_ColorQuad::LocalDataEntry &b)
+sortInstances(UI_Component_ColorQuad::Instance &a, UI_Component_ColorQuad::Instance &b)
 {
 	return (a.color.a == 1.f && b.color.a == 1.f) ? (a.hz.x > b.hz.x) : ((a.color.a == 1.f) ? true : ((b.color.a == 1.f) ? false : (a.hz.x < b.hz.x)));
 }
@@ -97,7 +97,7 @@ static const Vertex g_vertexData[] = {
 };
 
 void
-UI_Component_ColorQuad::Init(Renderer_Vulkan *r)
+UI_Component_ColorQuad::Init()
 {
 	if (isInitialized)
 		return;
@@ -149,7 +149,7 @@ UI_Component_ColorQuad::Init(Renderer_Vulkan *r)
 			},
 			{
 				1,
-				sizeof(LocalDataEntry),
+				sizeof(Instance),
 				VK_VERTEX_INPUT_RATE_INSTANCE
 			}
 		},
@@ -301,35 +301,37 @@ UI_Component_ColorQuad::Init(Renderer_Vulkan *r)
 		}
 	);
 
-	graphicsPipeline->Init(r->global.device);
+	auto r = Renderer_Vulkan::Get();
+	graphicsPipeline->Init();
 	pipeline = graphicsPipeline->CreatePipeline(r->global.device, r->global.pipelineCache, r->global.renderNode, 0);
 	
 	// Vertex Buffer
 	{
-		vertexBuffer.Init(r, sizeof(g_vertexData));
+		vertexBuffer.Init(sizeof(g_vertexData));
 		uint8_t *pData;
-		vertexBuffer.MapMemory(r, (void **)&pData);
+		vertexBuffer.MapMemory((void **)&pData);
 		memcpy(pData, g_vertexData, sizeof(g_vertexData));
-		vertexBuffer.UnmapMemory(r);
+		vertexBuffer.UnmapMemory();
 	}
 
 	isInitialized = true;
 }
 
 void
-UI_Component_ColorQuad::Cleanup(Renderer_Vulkan *r)
+UI_Component_ColorQuad::Cleanup()
 {
 	if (isInitialized == false)
 		return;
 	
-	for (auto &entry : localDataMap) {
+	for (auto &entry : instancedDataMap) {
 		auto &data = entry.second;
-		data.localBuffer.Cleanup(r);
+		data.Cleanup();
 	}
 	
-	vertexBuffer.Cleanup(r);
-
-	graphicsPipeline->Cleanup(r->global.device);
+	vertexBuffer.Cleanup();
+	
+	auto r = Renderer_Vulkan::Get();
+	graphicsPipeline->Cleanup();
 	delete graphicsPipeline;
 	graphicsPipeline = nullptr;
 
@@ -337,109 +339,62 @@ UI_Component_ColorQuad::Cleanup(Renderer_Vulkan *r)
 }
 
 void
-UI_Component_ColorQuad::Cleanup(Renderer_Vulkan *r, UI_Context *ctx)
+UI_Component_ColorQuad::Cleanup(UI_Context *ctx)
 {
 }
 
 void
-UI_Component_ColorQuad::Cleanup(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst)
+UI_Component_ColorQuad::Cleanup(UI_Context *ctx, UI_ComponentInstance *compInst)
 {
 }
 
 void
-UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx)
+UI_Component_ColorQuad::Prepare(UI_Context *ctx)
 {
 	if (isInitialized == false)
-		Init(r);
+		Init();
 
-	CreateLocalData(r, ctx);
+	CreateInstancedData(ctx);
 
-	auto &data = localDataMap[ctx];
-	if (data.isLocalBufferDirty) { // TEMP: Number of Elements or Z value change
-		//----------------------------------------------------------------------
-		// Result Attempt
-		if (data.capacity < (uint32_t)data.entries.size()) {
-			data.localBuffer.Cleanup(r);
-			data.isInitialized = false;
-			CreateLocalData(r, ctx);
-		}
-
-		sort(data.entries.begin(), data.entries.end(), sortLocalData);
-		sortUpdateCallbackList.reserve(data.entries.size());
-		uint32_t numEntries = (uint32_t)data.entries.size();
-		for (uint32_t a = 0; a < numEntries; ++a) {
-			auto &entry = data.entries[a];
-			if (entry.compInst->instanceIdx != a || entry.compInst->isDirty) {
-				sortUpdateCallbackList.push_back(entry.compInst);
-				entry.compInst->instanceIdx = a;
-				entry.compInst->isDirty = false;
-			}
-		}
-		//----------------------------------------------------------------------
-
-		uint8_t *pData;
-		data.localBuffer.MapMemory(r, (void **)&pData);
-
-		if (sortUpdateCallbackList.empty()) {
-			memcpy(pData, data.entries.data(), data.entries.size() * sizeof(LocalDataEntry));
-		} else {
-			uint32_t start;
-			uint32_t last = numeric_limits<uint32_t>::max();
-			for (auto entry : sortUpdateCallbackList) {
-				if (last == numeric_limits<uint32_t>::max())
-					start = entry->instanceIdx;
-				else if ((entry->instanceIdx - last) > 1) {
-					memcpy((LocalDataEntry *)pData + start, data.entries.data() + start, (last - start + 1) * sizeof(LocalDataEntry));
-					start = entry->instanceIdx;
-				}
-				last = entry->instanceIdx;
-			}
-
-			if (last != numeric_limits<uint32_t>::max())
-				memcpy((LocalDataEntry *)pData + start, data.entries.data() + start, (last - start + 1) * sizeof(LocalDataEntry));
-
-			sortUpdateCallbackList.clear();
-		}
-
-		data.localBuffer.UnmapMemory(r);
-		data.localBuffer.CopyToDevice(r, { 0, 0, data.entries.size() * sizeof(LocalDataEntry) });
-		data.isLocalBufferDirty = false;
-	}
+	auto &data = instancedDataMap[ctx];
+	data.Prepare(this, sortInstances);
 }
 
 void
-UI_Component_ColorQuad::Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst)
+UI_Component_ColorQuad::Prepare(UI_Context *ctx, UI_ComponentInstance *compInst)
 {
 }
 
 void
-UI_Component_ColorQuad::RenderOpaque(Renderer_Vulkan *r, UI_Context *ctx)
+UI_Component_ColorQuad::RenderOpaque(UI_Context *ctx)
 {
+	auto r = Renderer_Vulkan::Get();
 #if 1
 	{
-		LocalData &data = localDataMap[ctx];
+		InstancedData &data = instancedDataMap[ctx];
 		const VkDeviceSize offsets[1] = { 0 };
 		vkCmdBindPipeline(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 		vkCmdBindDescriptorSets(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->pipeline_layout, 0, (uint32_t)r->global.descGlobalParamSets.size(), r->global.descGlobalParamSets.data(), 0, nullptr);
 		vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 0, 1, &vertexBuffer.bufferObject, offsets);
-		vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 1, 1, &data.localBuffer.deviceBufferObject, offsets);
+		vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 1, 1, &data.instanceBuffer.deviceBufferObject, offsets);
 		vkCmdDraw(r->global.primaryCommandPool.currentBuffer, 4 * 3, data.numOpaque, 0, 0);
 	}
 #endif
 }
 
 void
-UI_Component_ColorQuad::RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, vector<UI_ComponentInstance *> &instances, uint32_t startInstance, uint32_t numInstances)
+UI_Component_ColorQuad::RenderTransparent(UI_Context *ctx, vector<UI_ComponentInstance *> &instances, uint32_t startInstance, uint32_t numInstances)
 {
+	auto r = Renderer_Vulkan::Get();
 #if 1
 	{
 		if (s_lastComponentRendered != this) {
-			LocalData &data = localDataMap[ctx];
+			InstancedData &data = instancedDataMap[ctx];
 			const VkDeviceSize offsets[1] = { 0 };
 			vkCmdBindPipeline(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 			vkCmdBindDescriptorSets(r->global.primaryCommandPool.currentBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->pipeline_layout, 0, (uint32_t)r->global.descGlobalParamSets.size(), r->global.descGlobalParamSets.data(), 0, nullptr);
 			vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 0, 1, &vertexBuffer.bufferObject, offsets);
-			vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 1, 1, &data.localBuffer.deviceBufferObject, offsets);
+			vkCmdBindVertexBuffers(r->global.primaryCommandPool.currentBuffer, 1, 1, &data.instanceBuffer.deviceBufferObject, offsets);
 		}
 		vkCmdDraw(r->global.primaryCommandPool.currentBuffer, 4 * 3, numInstances, 0, instances[startInstance]->instanceIdx);
 	}
@@ -447,77 +402,42 @@ UI_Component_ColorQuad::RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, v
 }
 
 void
-UI_Component_ColorQuad::RenderOverlay(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst)
+UI_Component_ColorQuad::RenderOverlay(UI_Context *ctx, UI_ComponentInstance *compInst)
 {
 }
 
 void
-UI_Component_ColorQuad::PopulateTransparentInstances(Renderer_Vulkan *r, UI_Context *ctx, vector<UI_ComponentInstance *> &instances)
+UI_Component_ColorQuad::PopulateTransparentInstances(UI_Context *ctx, vector<UI_ComponentInstance *> &instances)
 {
-	auto &data = localDataMap[ctx];
-	uint32_t numInstances = (uint32_t)data.entries.size();
+	auto &data = instancedDataMap[ctx];
+	uint32_t numInstances = (uint32_t)data.instances.size();
 	for (uint32_t a = data.numOpaque; a < numInstances; ++a)
-		instances.push_back(data.entries[a].compInst);
+		instances.push_back(data.instances[a].compInst);
 }
 
 inline
 void
-UI_Component_ColorQuad::UploadLocalData(Renderer_Vulkan *r, LocalData &data)
+UI_Component_ColorQuad::CreateInstancedData(UI_Context *ctx)
 {
-	// Instance Data
-	{
-		uint8_t *pData;
-		data.localBuffer.MapMemory(r, (void **)&pData);
-		memcpy(pData, data.entries.data(), data.entries.size() * sizeof(LocalDataEntry));
-		data.localBuffer.UnmapMemory(r);
-	}
-	
-	data.localBuffer.CopyToDevice(r, { 0, 0, data.entries.size() * sizeof(LocalDataEntry) });
-}
-
-inline
-void
-UI_Component_ColorQuad::CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx)
-{
-	auto search = localDataMap.find(ctx);
-	if (search != localDataMap.end() && search->second.isInitialized)
+	auto search = instancedDataMap.find(ctx);
+	if (search != instancedDataMap.end() && search->second.isInitialized)
 		return;
 
-	LocalData &data = localDataMap[ctx];
-
-	// Store old capacity for logging purposes
-	auto oldCapacity = data.capacity;
-
-	if (data.capacity == 0)
-		data.capacity = 1;
-	uint32_t numEntries = (uint32_t)data.entries.size();
-	while (data.capacity < numEntries)
-		data.capacity <<= 1;
-//	LOG_DEBUG("Reallocating buffer: {} -> {} entries...", oldCapacity, data.capacity);
-
-	// Buffer Objects
-	{
-		uint32_t numBytes = data.capacity * sizeof(LocalDataEntry);
-		data.localBuffer.Init(r, numBytes);
-	}
-
-	data.isInitialized = true;
-
-	UploadLocalData(r, data);
+	InstancedData &data = instancedDataMap[ctx];
+	data.Init();
 }
 #endif
-
 
 void
 UI_Component_ColorQuad::OnAddToContext(UI_ComponentInstance *compInst, UI_Context *ctx)
 {
 #if OPENBBG_WITH_VULKAN
 	auto localCompInst = static_cast<UI_ComponentInstance_ColorQuad *>(compInst);
-	LocalData &data = localDataMap[ctx];
-	compInst->instanceIdx = (uint32_t)data.entries.size();
+	InstancedData &data = instancedDataMap[ctx];
+	compInst->instanceIdx = (uint32_t)data.instances.size();
 	data.isLocalBufferDirty = true;
-	data.entries.push_back(LocalDataEntry());
-	auto &entry = data.entries.back();
+	data.instances.push_back(Instance());
+	auto &entry = data.instances.back();
 	if (localCompInst->color.a == 1.f)
 		++data.numOpaque;
 	ctx->isTransparentInstancesDirty = true;
@@ -535,11 +455,11 @@ UI_Component_ColorQuad::OnRemoveFromContext(UI_ComponentInstance *compInst, UI_C
 {
 #if OPENBBG_WITH_VULKAN
 	auto localCompInst = static_cast<UI_ComponentInstance_ColorQuad *>(compInst);
-	LocalData &data = localDataMap[ctx];
-	data.entries.erase(data.entries.begin() + compInst->instanceIdx);
-	uint32_t numEntries = (uint32_t)data.entries.size();
+	InstancedData &data = instancedDataMap[ctx];
+	data.instances.erase(data.instances.begin() + compInst->instanceIdx);
+	uint32_t numEntries = (uint32_t)data.instances.size();
 	for (auto a = compInst->instanceIdx; a < numEntries; ++a)
-		--data.entries[a].compInst->instanceIdx;
+		--data.instances[a].compInst->instanceIdx;
 	if (localCompInst->color.a == 1.f)
 		--data.numOpaque;
 	ctx->isTransparentInstancesDirty = true;
@@ -552,8 +472,8 @@ void UI_Component_ColorQuad::OnMetricsUpdate(UI_ComponentInstance *compInst)
 	compInst->isDirty = true;
 	if (compInst->control->context != nullptr) {
 		auto localCompInst = static_cast<UI_ComponentInstance_ColorQuad *>(compInst);
-		auto &data = localDataMap[compInst->control->context];
-		auto &entry = data.entries[compInst->instanceIdx];
+		auto &data = instancedDataMap[compInst->control->context];
+		auto &entry = data.instances[compInst->instanceIdx];
 		entry.position = compInst->relativePosition;
 		entry.color = localCompInst->color;
 		entry.scissor.x = entry.position.x;

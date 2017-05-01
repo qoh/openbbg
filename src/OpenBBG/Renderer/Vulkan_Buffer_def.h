@@ -6,6 +6,7 @@ namespace vk {
 
 inline
 Buffer::Buffer(VkBufferUsageFlags flags)
+	: flags(flags)
 {
 }
 
@@ -16,8 +17,9 @@ Buffer::~Buffer()
 
 inline
 void
-Buffer::Init(Renderer_Vulkan *r, uint64_t numBytes)
+Buffer::Init(uint64_t numBytes)
 {
+	auto r = Renderer_Vulkan::Get();
 	assert(r->global.CreateBufferObject(
 		numBytes,
 		flags,
@@ -35,16 +37,18 @@ Buffer::Init(Renderer_Vulkan *r, uint64_t numBytes)
 
 inline
 void
-Buffer::Cleanup(Renderer_Vulkan *r)
+Buffer::Cleanup()
 {
+	auto r = Renderer_Vulkan::Get();
 	vkDestroyBuffer(r->global.device, bufferObject, nullptr);
 	vkFreeMemory(r->global.device, bufferMemory, nullptr);
 }
 
 inline
 void
-Buffer::MapMemory(Renderer_Vulkan *r, void **ptr)
+Buffer::MapMemory(void **ptr)
 {
+	auto r = Renderer_Vulkan::Get();
 	VkMemoryRequirements memReqs;
 	vkGetBufferMemoryRequirements(r->global.device, bufferObject, &memReqs);
 	VkResult res = vkMapMemory(r->global.device, bufferMemory, 0, memReqs.size, 0, ptr);
@@ -53,8 +57,9 @@ Buffer::MapMemory(Renderer_Vulkan *r, void **ptr)
 
 inline
 void
-Buffer::UnmapMemory(Renderer_Vulkan *r)
+Buffer::UnmapMemory()
 {
+	auto r = Renderer_Vulkan::Get();
 	vkUnmapMemory(r->global.device, bufferMemory);
 }
 

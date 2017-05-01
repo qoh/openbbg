@@ -62,6 +62,7 @@
 				RenderNode_def.h
 				Renderer_Vulkan.cpp
 				Renderer_Vulkan.h
+				Renderer_Vulkan_def.h
 				Utility_Vulkan.h
 				Utility_Vulkan_def.h
 				Vulkan_Buffer.h
@@ -69,7 +70,10 @@
 				Vulkan_CommandPool.h
 				Vulkan_GlobalInstance.h
 				Vulkan_GlobalInstance_def.h
+				Vulkan_InstancedData.h
+				Vulkan_InstancedData_Def.h
 				Vulkan_Pipeline.h
+				Vulkan_Pipeline_def.h
 				Vulkan_RenderNode.h
 				Vulkan_ShaderUtility.h
 				Vulkan_StagedBuffer.h

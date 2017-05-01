@@ -57,17 +57,17 @@ struct UI_Component
 	virtual void Deconstruct(UI_ComponentInstance *compInst) = 0;
 	
 #if OPENBBG_WITH_VULKAN
-	static void CleanupAll(Renderer_Vulkan *r);
-	virtual void Init(Renderer_Vulkan *r) = 0;
-	virtual void Cleanup(Renderer_Vulkan *r) = 0;
-	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx) = 0;
-	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
-	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx) = 0;
-	virtual void RenderOpaque(Renderer_Vulkan *r, UI_Context *ctx) = 0;
-	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, vector<UI_ComponentInstance *> &instances, uint32_t startInstance, uint32_t numInstances) = 0;
-	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
-	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
-	virtual void PopulateTransparentInstances(Renderer_Vulkan *r, UI_Context *ctx, vector<UI_ComponentInstance *> &instances) = 0;
+	static void CleanupAll();
+	virtual void Init() = 0;
+	virtual void Cleanup() = 0;
+	virtual void Cleanup(UI_Context *ctx) = 0;
+	virtual void Cleanup(UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
+	virtual void Prepare(UI_Context *ctx) = 0;
+	virtual void RenderOpaque(UI_Context *ctx) = 0;
+	virtual void RenderTransparent(UI_Context *ctx, vector<UI_ComponentInstance *> &instances, uint32_t startInstance, uint32_t numInstances) = 0;
+	virtual void RenderOverlay(UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
+	virtual void Prepare(UI_Context *ctx, UI_ComponentInstance *compInst) = 0;
+	virtual void PopulateTransparentInstances(UI_Context *ctx, vector<UI_ComponentInstance *> &instances) = 0;
 #endif
 
 	virtual void OnAddToContext(UI_ComponentInstance *compInst, UI_Context *ctx) = 0;

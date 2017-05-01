@@ -12,13 +12,13 @@ struct Buffer
 
 	~Buffer();
 
-	void Init(Renderer_Vulkan *r, uint64_t numBytes);
+	void Init(uint64_t numBytes);
 
-	void Cleanup(Renderer_Vulkan *r);
+	void Cleanup();
 
-	void MapMemory(Renderer_Vulkan *r, void **ptr);
+	void MapMemory(void **ptr);
 
-	void UnmapMemory(Renderer_Vulkan *r);
+	void UnmapMemory();
 
 	VkBufferUsageFlags flags;
 

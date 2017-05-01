@@ -5,6 +5,8 @@
 #include <OpenBBG/UI/UI_Component.h>
 #include <OpenBBG/Renderer/Vulkan_Buffer.h>
 #include <OpenBBG/Renderer/Vulkan_StagedBuffer.h>
+#include <OpenBBG/Renderer/Vulkan_InstancedData.h>
+#include <OpenBBG/Renderer/Vulkan_Pipeline.h>
 
 namespace openbbg {
 
@@ -31,32 +33,32 @@ struct UI_Component_ColorQuad
 	virtual void Deconstruct(UI_ComponentInstance *compInst);
 
 #if OPENBBG_WITH_VULKAN
-	virtual void Init(Renderer_Vulkan *r);
+	virtual void Init();
 
-	virtual void Cleanup(Renderer_Vulkan *r);
+	virtual void Cleanup();
 
-	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx);
+	virtual void Cleanup(UI_Context *ctx);
 
-	virtual void Cleanup(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst);
+	virtual void Cleanup(UI_Context *ctx, UI_ComponentInstance *compInst);
 
-	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx);
+	virtual void Prepare(UI_Context *ctx);
 
-	virtual void Prepare(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst);
+	virtual void Prepare(UI_Context *ctx, UI_ComponentInstance *compInst);
 
-	virtual void RenderOpaque(Renderer_Vulkan *r, UI_Context *ctx);
+	virtual void RenderOpaque(UI_Context *ctx);
 
-	virtual void RenderTransparent(Renderer_Vulkan *r, UI_Context *ctx, vector<UI_ComponentInstance *> &instances, uint32_t startInstance, uint32_t numInstances);
+	virtual void RenderTransparent(UI_Context *ctx, vector<UI_ComponentInstance *> &instances, uint32_t startInstance, uint32_t numInstances);
 
-	virtual void RenderOverlay(Renderer_Vulkan *r, UI_Context *ctx, UI_ComponentInstance *compInst);
+	virtual void RenderOverlay(UI_Context *ctx, UI_ComponentInstance *compInst);
 
-	virtual void PopulateTransparentInstances(Renderer_Vulkan *r, UI_Context *ctx, vector<UI_ComponentInstance *> &instances);
+	virtual void PopulateTransparentInstances(UI_Context *ctx, vector<UI_ComponentInstance *> &instances);
 
 	VkPipeline pipeline;
 
 	vk::GraphicsPipeline *graphicsPipeline;
 
 	// Local Data
-	typedef struct LocalDataEntry
+	typedef struct Instance
 	{
 		UI_ComponentInstance *compInst;
 		glm::vec2 position;
@@ -64,25 +66,13 @@ struct UI_Component_ColorQuad
 		glm::vec4 color;
 		glm::vec4 scissor;
 		glm::vec2 hz;
-	} LocalDataEntry;
+	} Instance;
 
-	typedef struct LocalData
-	{
-		vk::StagedBuffer localBuffer { VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT };
+	typedef vk::InstancedData<Instance> InstancedData;
 
-		vector<LocalDataEntry> entries;
+	map<UI_Context *, InstancedData> instancedDataMap;
 
-		uint32_t numOpaque { 0 };
-		uint32_t capacity { 1 };
-
-		bool isLocalBufferDirty { true };
-		bool isInitialized { false };
-	} LocalData;
-
-	map<UI_Context *, LocalData> localDataMap;
-
-	void CreateLocalData(Renderer_Vulkan *r, UI_Context *ctx);
-	void UploadLocalData(Renderer_Vulkan *r, LocalData &data);
+	void CreateInstancedData(UI_Context *ctx);
 
 	vk::Buffer vertexBuffer { VK_BUFFER_USAGE_VERTEX_BUFFER_BIT };
 #endif
